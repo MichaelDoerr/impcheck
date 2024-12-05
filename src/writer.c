@@ -27,6 +27,14 @@ void write_char(int c_int) {
     fprintf(f_writer, "\n%c ", c_int);
 #endif
 }
+void write_char_raw(int c_int) {
+    if (!f_writer) return;
+#if IMPCHECK_WRITE_DIRECTIVES == 1
+    trusted_utils_write_char(c_int, f_writer);
+#else
+    fprintf(f_writer, "%c", c_int);
+#endif
+}
 void write_int(int i) {
     if (!f_writer) return;
 #if IMPCHECK_WRITE_DIRECTIVES == 1

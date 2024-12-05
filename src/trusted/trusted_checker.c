@@ -95,6 +95,10 @@ int tc_run(bool check_model, bool lenient) {
             // respond
             say(res);
             if (share) trusted_utils_write_sig(buf_sig, output);
+#if IMPCHECK_PLRAT
+            trusted_utils_write_lrat(id, buf_lits->data, nb_lits,
+                buf_hints->data, nb_hints);
+#endif
 #if IMPCHECK_FLUSH_ALWAYS
             UNLOCKED_IO(fflush)(output);
 #endif
