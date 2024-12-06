@@ -126,7 +126,7 @@ void trusted_utils_read_sig(u8* out_sig, FILE* file) {
 #endif
 }
 
-#if IMPCHECK_WRITE_DIRECTIVES
+#if IMPCHECK_PLRAT
 void trusted_utils_write_lrat(u64 id, int* literals, int nb_literals,
     u64* hints, int nb_hints) {
     write_ul(id);
@@ -134,7 +134,9 @@ void trusted_utils_write_lrat(u64 id, int* literals, int nb_literals,
     write_int(0);
     write_uls(hints, nb_hints);
     write_int(0);
+#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_char_raw('\n');
+#endif
 }
 #endif
 
