@@ -127,7 +127,8 @@ void trusted_utils_read_sig(u8* out_sig, FILE* file) {
 }
 
 #if IMPCHECK_PLRAT
-void trusted_utils_write_lrat(u64 id, int* literals, int nb_literals,
+
+void trusted_utils_write_lrat_add(u64 id, int* literals, int nb_literals,
     u64* hints, int nb_hints) {
     write_ul(id);
     write_ints(literals, nb_literals);
@@ -138,7 +139,31 @@ void trusted_utils_write_lrat(u64 id, int* literals, int nb_literals,
     write_char_raw('\n');
 #endif
 }
+
+void trusted_utils_write_lrat_delete(u64 id, u64* hints, int nb_hints) {
+    write_ul(id);
+    write_char_raw('d');
+    write_char_raw(' ');
+    write_uls(hints, nb_hints);
+    write_int(0);
+#if IMPCHECK_WRITE_DIRECTIVES == 2
+    write_char_raw('\n');
 #endif
+}
+
+void trusted_utils_write_lrat_import(u64 id, int* literals, int nb_literals) {    
+    write_ul(id);
+    write_char_raw('i');
+    write_char_raw(' ');
+    write_ul(id);
+    write_ints(literals, nb_literals);
+    write_int(0);
+#if IMPCHECK_WRITE_DIRECTIVES == 2
+    write_char_raw('\n');
+#endif
+}
+
+#endif //#if IMPCHECK_PLRAT
 
 void trusted_utils_write_char(char c, FILE* file) {
     int res = UNLOCKED_IO(fputc)(c, file);

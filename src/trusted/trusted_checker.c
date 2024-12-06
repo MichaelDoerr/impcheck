@@ -75,6 +75,9 @@ int tc_run(bool check_model, bool lenient) {
     clock_t start = clock();
 
     u64 nb_produced = 0, nb_imported = 0, nb_deleted = 0;
+#if IMPCHECK_PLRAT
+    u64 last_id = 1;
+#endif
 
     bool reported_error = false;
 
@@ -96,7 +99,9 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
             if (share) trusted_utils_write_sig(buf_sig, output);
 #if IMPCHECK_PLRAT
-            trusted_utils_write_lrat(id, buf_lits->data, nb_lits,
+            last_id = id;
+            trusted_utils_write_lrat_add(id, 
+                buf_lits->data, nb_lits,
                 buf_hints->data, nb_hints);
 #endif
 #if IMPCHECK_FLUSH_ALWAYS
@@ -116,6 +121,9 @@ int tc_run(bool check_model, bool lenient) {
             // respond
             say(res);
             nb_imported++;
+#if IMPCHECK_PLRAT
+            trusted_utils_write_lrat_import(id, buf_lits->data, nb_lits);
+#endif
 
         } else if (c == TRUSTED_CHK_CLS_DELETE) {
             
@@ -127,6 +135,9 @@ int tc_run(bool check_model, bool lenient) {
             // respond
             say(res);
             nb_deleted += nb_hints;
+#if IMPCHECK_PLRAT
+            trusted_utils_write_lrat_delete(last_id, buf_hints->data, nb_hints);
+#endif
 
         } else if (c == TRUSTED_CHK_LOAD) {
 
