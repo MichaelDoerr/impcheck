@@ -77,6 +77,11 @@ int tc_run(bool check_model, bool lenient) {
     u64 nb_produced = 0, nb_imported = 0, nb_deleted = 0;
 #if IMPCHECK_PLRAT
     u64 last_id = 1;
+    u64 offset = 0;
+    struct u64_vec* origIDs;
+    struct u64_vec* offsets;
+    origIDs = u64_vec_init(1 << 10);
+    offsets = u64_vec_init(1 << 10);
 #endif
 
     bool reported_error = false;
@@ -86,7 +91,7 @@ int tc_run(bool check_model, bool lenient) {
         if (c == TRUSTED_CHK_CLS_PRODUCE) {
 
             // parse
-            const u64 id = trusted_utils_read_ul(input);
+            u64 id = trusted_utils_read_ul(input);
             const int nb_lits = trusted_utils_read_int(input);
             read_literals(nb_lits);
             const int nb_hints = trusted_utils_read_int(input);
@@ -99,6 +104,7 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
             if (share) trusted_utils_write_sig(buf_sig, output);
 #if IMPCHECK_PLRAT
+            id = trusted_utils_get_next_valid_id(id, &offset, buf_hints->data, nb_hints);
             last_id = id;
             trusted_utils_write_lrat_add(id, 
                 buf_lits->data, nb_lits,
