@@ -151,11 +151,11 @@ void trusted_utils_write_lrat_delete(u64 id, u64* hints, int nb_hints) {
 #endif
 }
 
-void trusted_utils_write_lrat_import(u64 id, int* literals, int nb_literals) {    
-    write_ul(id);
+void trusted_utils_write_lrat_import(u64 last_id, u64 clause_id, int* literals, int nb_literals) {    
+    write_ul(last_id);
     write_char_raw('i');
     write_char_raw(' ');
-    write_ul(id);
+    write_ul(clause_id);
     write_ints(literals, nb_literals);
     write_int(0);
 #if IMPCHECK_WRITE_DIRECTIVES == 2

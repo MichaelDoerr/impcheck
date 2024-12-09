@@ -122,7 +122,7 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
             nb_imported++;
 #if IMPCHECK_PLRAT
-            trusted_utils_write_lrat_import(id, buf_lits->data, nb_lits);
+            trusted_utils_write_lrat_import(last_id, id, buf_lits->data, nb_lits);
 #endif
 
         } else if (c == TRUSTED_CHK_CLS_DELETE) {

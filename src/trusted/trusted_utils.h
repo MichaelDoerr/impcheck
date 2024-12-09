@@ -61,7 +61,7 @@ void trusted_utils_write_uls(const u64* data, u64 nb_uls, FILE* file);
 void trusted_utils_write_sig(const u8* sig, FILE* file);
 void trusted_utils_write_lrat_add(u64 id, int* literals, int nb_literals, u64* hints, int nb_hints);
 void trusted_utils_write_lrat_delete(u64 id, u64* hints, int nb_hints);
-void trusted_utils_write_lrat_import(u64 id, int* literals, int nb_literals);
+void trusted_utils_write_lrat_import(u64 last_id, u64 clause_id, int* literals, int nb_literals);
 
 void trusted_utils_sig_to_str(const u8* sig, char* out);
 bool trusted_utils_str_to_sig(const char* str, u8* out);
