@@ -44,8 +44,6 @@ void* trusted_utils_malloc(u64 size);
 void* trusted_utils_realloc(void* from, u64 new_size);
 void* trusted_utils_calloc(u64 nb_objs, u64 size_per_obj);
 
-u64 trusted_utils_get_next_valid_id(const u64 id, u64* offset, u64* origIDs, u64* offsets, u64 sizeIDs, u64* hints, int nb_hints);
-
 bool trusted_utils_read_bool(FILE* file);
 int trusted_utils_read_char(FILE* file);
 int trusted_utils_read_int(FILE* file);

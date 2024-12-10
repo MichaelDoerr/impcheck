@@ -164,30 +164,8 @@ void trusted_utils_write_lrat_import(u64 last_id, u64 clause_id, int* literals, 
 }
 
 
-u64 trusted_utils_get_next_valid_id(const u64 id, u64* offset, u64* origIDs, u64* offsets, u64 sizeIDs, u64* hints, int nb_hints){
-    u64 new_id = id + *offset;
-    for(int i = 0; i < nb_hints; ++i){
-        u64 hint = hints[i];
-        bool already_seen = false;
-        if (0 < sizeIDs && hint <= origIDs[sizeIDs-1]){
-            already_seen = true;
-        }
-        for(u64 o = sizeIDs-1; 0 <= o; --o) {
-            //TODO dont use 2 vectors, use a hashmap (hash.c) and delete IDs of deleted clauses
-        }
-        
-    }
-    bool already_seen = false;
-    if (0 < sizeIDs && id <= origIDs[sizeIDs-1]){
-        already_seen = true;
-    }
-    
-    if (already_seen){
 
-    }
-}
-
-#endif //#if IMPCHECK_PLRAT
+#endif //# end IMPCHECK_PLRAT
 
 void trusted_utils_write_char(char c, FILE* file) {
     int res = UNLOCKED_IO(fputc)(c, file);

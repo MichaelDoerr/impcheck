@@ -18,7 +18,7 @@ add_executable(impcheck_parse
     src/trusted/main_parse.c)
 add_executable(impcheck_check 
     src/trusted/confirm.c src/trusted/hash.c src/trusted/lrat_check.c src/trusted/secret.c src/trusted/siphash.c src/trusted/trusted_checker.c src/trusted/top_check.c src/trusted/trusted_utils.c src/trusted/vectors.c src/writer.c
-    src/trusted/main_check.c)
+    src/trusted/main_check.c src/trusted/plrat_utils.c)
 add_executable(impcheck_confirm
     src/trusted/confirm.c src/trusted/hash.c src/trusted/secret.c src/trusted/siphash.c src/trusted/trusted_parser.c src/trusted/trusted_utils.c src/trusted/vectors.c src/writer.c 
     src/trusted/main_confirm.c)

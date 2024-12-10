@@ -6,6 +6,8 @@
 #include "top_check.h"      // for top_check_commit_formula_sig, top_check_d...
 #include "trusted_utils.h"  // for trusted_utils_read_int, trusted_utils_log...
 #include "checker_interface.h"
+#include "hash.h"
+#include "plrat_utils.h"
 
 // Instantiate int_vec
 #define TYPE int
@@ -78,10 +80,7 @@ int tc_run(bool check_model, bool lenient) {
 #if IMPCHECK_PLRAT
     u64 last_id = 1;
     u64 offset = 0;
-    struct u64_vec* origIDs;
-    struct u64_vec* offsets;
-    origIDs = u64_vec_init(1 << 10);
-    offsets = u64_vec_init(1 << 10);
+    struct hash_table* id_offsets = hash_table_init(15);
 #endif
 
     bool reported_error = false;
@@ -104,7 +103,7 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
             if (share) trusted_utils_write_sig(buf_sig, output);
 #if IMPCHECK_PLRAT
-            id = trusted_utils_get_next_valid_id(id, &offset, buf_hints->data, nb_hints);
+            id = plrat_utils_get_next_valid_id(id, &offset, id_offsets,buf_hints->data, nb_hints);
             last_id = id;
             trusted_utils_write_lrat_add(id, 
                 buf_lits->data, nb_lits,
@@ -202,6 +201,9 @@ int tc_run(bool check_model, bool lenient) {
         }
     }
 
+#if IMPCHECK_PLRAT
+    hash_table_free(id_offsets);
+#endif
     float elapsed = (float) (clock() - start) / CLOCKS_PER_SEC;
     snprintf(trusted_utils_msgstr, 512, "cpu:%.3f prod:%lu imp:%lu del:%lu", elapsed, nb_produced, nb_imported, nb_deleted);
     trusted_utils_log(trusted_utils_msgstr);
