@@ -141,6 +141,7 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
             nb_deleted += nb_hints;
 #if IMPCHECK_PLRAT
+            plrat_utils_translate_and_delete(id_offsets, buf_hints->data, nb_hints);
             trusted_utils_write_lrat_delete(last_id, buf_hints->data, nb_hints);
 #endif
 
