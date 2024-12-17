@@ -79,7 +79,7 @@ void* trusted_utils_calloc(u64 nb_objs, u64 size_per_obj) {
 bool trusted_utils_read_bool(FILE* file) {
     int res = UNLOCKED_IO(fgetc)(file);
     if (res == EOF) trusted_utils_exit_eof();
-#ifdef IMPCHECK_WRITE_DIRECTIVES
+#if IMPCHECK_WRITE_DIRECTIVES & !IMPCHECK_PLRAT
     write_bool(res ? 1 : 0);
 #endif
     return res ? 1 : 0;
@@ -87,7 +87,7 @@ bool trusted_utils_read_bool(FILE* file) {
 int trusted_utils_read_char(FILE* file) {
     int res = UNLOCKED_IO(fgetc)(file);
     if (res == EOF) trusted_utils_exit_eof();
-#ifdef IMPCHECK_WRITE_DIRECTIVES
+#if IMPCHECK_WRITE_DIRECTIVES & !IMPCHECK_PLRAT
     write_char(res);
 #endif
     return res;
@@ -99,28 +99,28 @@ void trusted_utils_read_objs(void* data, size_t size, size_t nb_objs, FILE* file
 int trusted_utils_read_int(FILE* file) {
     int i;
     trusted_utils_read_objs(&i, sizeof(int), 1, file);
-#ifdef IMPCHECK_WRITE_DIRECTIVES
+#if IMPCHECK_WRITE_DIRECTIVES & !IMPCHECK_PLRAT
     write_int(i);
 #endif
     return i;
 }
 void trusted_utils_read_ints(int* data, u64 nb_ints, FILE* file) {
     trusted_utils_read_objs(data, sizeof(int), nb_ints, file);
-#ifdef IMPCHECK_WRITE_DIRECTIVES
+#if IMPCHECK_WRITE_DIRECTIVES & !IMPCHECK_PLRAT
     write_ints(data, nb_ints);
 #endif
 }
 u64 trusted_utils_read_ul(FILE* file) {
     u64 u;
     trusted_utils_read_objs(&u, sizeof(u64), 1, file);
-#ifdef IMPCHECK_WRITE_DIRECTIVES
+#if IMPCHECK_WRITE_DIRECTIVES & !IMPCHECK_PLRAT
     write_ul(u);
 #endif
     return u;
 }
 void trusted_utils_read_uls(u64* data, u64 nb_uls, FILE* file) {
     trusted_utils_read_objs(data, sizeof(u64), nb_uls, file);
-#ifdef IMPCHECK_WRITE_DIRECTIVES
+#if IMPCHECK_WRITE_DIRECTIVES & !IMPCHECK_PLRAT
     write_uls(data, nb_uls);
 #endif
 }
@@ -128,10 +128,51 @@ void trusted_utils_read_sig(u8* out_sig, FILE* file) {
     signature dummy;
     if (!out_sig) out_sig = dummy;
     trusted_utils_read_objs(out_sig, sizeof(int), 4, file);
-#ifdef IMPCHECK_WRITE_DIRECTIVES
+#if IMPCHECK_WRITE_DIRECTIVES & !IMPCHECK_PLRAT
     write_sig(out_sig);
 #endif
 }
+
+#if IMPCHECK_PLRAT
+
+void trusted_utils_write_lrat_add(u64 id, int* literals, int nb_literals,
+    u64* hints, int nb_hints) {
+    write_ul(id);
+    write_ints(literals, nb_literals);
+    write_int(0);
+    write_uls(hints, nb_hints);
+    write_int(0);
+#if IMPCHECK_WRITE_DIRECTIVES == 2
+    write_char_raw('\n');
+#endif
+}
+
+void trusted_utils_write_lrat_delete(u64 id, u64* hints, int nb_hints) {
+    write_ul(id);
+    write_char_raw('d');
+    write_char_raw(' ');
+    write_uls(hints, nb_hints);
+    write_int(0);
+#if IMPCHECK_WRITE_DIRECTIVES == 2
+    write_char_raw('\n');
+#endif
+}
+
+void trusted_utils_write_lrat_import(u64 last_id, u64 clause_id, int* literals, int nb_literals) {    
+    write_ul(last_id);
+    write_char_raw('i');
+    write_char_raw(' ');
+    write_ul(clause_id);
+    write_ints(literals, nb_literals);
+    write_int(0);
+#if IMPCHECK_WRITE_DIRECTIVES == 2
+    write_char_raw('\n');
+#endif
+}
+
+
+
+#endif //# end IMPCHECK_PLRAT
 
 void trusted_utils_write_char(char c, FILE* file) {
     int res = UNLOCKED_IO(fputc)(c, file);

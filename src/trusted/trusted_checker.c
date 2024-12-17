@@ -6,6 +6,8 @@
 #include "top_check.h"      // for top_check_commit_formula_sig, top_check_d...
 #include "trusted_utils.h"  // for trusted_utils_read_int, trusted_utils_log...
 #include "checker_interface.h"
+#include "hash.h"
+#include "plrat_utils.h"
 
 // Instantiate int_vec
 #define TYPE int
@@ -77,6 +79,11 @@ int tc_run(bool check_model, bool lenient) {
     clock_t start = clock();
 
     u64 nb_produced = 0, nb_imported = 0, nb_deleted = 0;
+#if IMPCHECK_PLRAT
+    u64 last_id = 1;
+    u64 offset = 0;
+    struct hash_table* id_offsets = hash_table_init(15);
+#endif
 
     bool reported_error = false;
 
@@ -85,7 +92,7 @@ int tc_run(bool check_model, bool lenient) {
         if (c == TRUSTED_CHK_CLS_PRODUCE) {
 
             // parse
-            const u64 id = trusted_utils_read_ul(input);
+            u64 id = trusted_utils_read_ul(input);
             const int nb_lits = trusted_utils_read_int(input);
             read_literals(nb_lits);
             const int nb_hints = trusted_utils_read_int(input);
@@ -97,6 +104,13 @@ int tc_run(bool check_model, bool lenient) {
             // respond
             say(res);
             if (share) trusted_utils_write_sig(buf_sig, output);
+#if IMPCHECK_PLRAT
+            id = plrat_utils_get_next_valid_id(id, &offset, id_offsets,buf_hints->data, nb_hints);
+            last_id = id;
+            trusted_utils_write_lrat_add(id, 
+                buf_lits->data, nb_lits,
+                buf_hints->data, nb_hints);
+#endif
 #if IMPCHECK_FLUSH_ALWAYS
             UNLOCKED_IO(fflush)(output);
 #endif
@@ -114,6 +128,9 @@ int tc_run(bool check_model, bool lenient) {
             // respond
             say(res);
             nb_imported++;
+#if IMPCHECK_PLRAT
+            trusted_utils_write_lrat_import(last_id, id, buf_lits->data, nb_lits);
+#endif
 
         } else if (c == TRUSTED_CHK_CLS_DELETE) {
             
@@ -125,6 +142,10 @@ int tc_run(bool check_model, bool lenient) {
             // respond
             say(res);
             nb_deleted += nb_hints;
+#if IMPCHECK_PLRAT
+            plrat_utils_translate_and_delete(id_offsets, buf_hints->data, nb_hints);
+            trusted_utils_write_lrat_delete(last_id, buf_hints->data, nb_hints);
+#endif
 
         } else if (c == TRUSTED_CHK_LOAD) {
 
@@ -183,6 +204,9 @@ int tc_run(bool check_model, bool lenient) {
         }
     }
 
+#if IMPCHECK_PLRAT
+    hash_table_free(id_offsets);
+#endif
     float elapsed = (float) (clock() - start) / CLOCKS_PER_SEC;
     snprintf(trusted_utils_msgstr, 512, "cpu:%.3f prod:%lu imp:%lu del:%lu n_s:%lu", elapsed, nb_produced, nb_imported, nb_deleted, nb_solvers);
     trusted_utils_log(trusted_utils_msgstr);

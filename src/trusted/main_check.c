@@ -23,7 +23,11 @@ int main(int argc, char *argv[]) {
 
 #if IMPCHECK_WRITE_DIRECTIVES
     char output_path[512];
-    snprintf(output_path, 512, "directives.%i.impcheck", getpid());
+    #if IMPCHECK_PLRAT
+        snprintf(output_path, 512, "%i.PLRAT", getpid());
+    #else
+        snprintf(output_path, 512, "directives.%i.impcheck", getpid());
+    #endif
     writer_init(output_path);
 #endif
 
