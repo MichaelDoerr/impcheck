@@ -28,6 +28,7 @@ FILE* output; // named pipe
 int nb_vars; // # variables in formula
 signature formula_sig; // formula signature
 u64 nb_solvers; // number of solvers
+u64 rank; // Rank of this checker and its solver
 
 bool do_logging = true;
 
@@ -86,11 +87,11 @@ int tc_run(bool check_model, bool lenient) {
 #endif
 
     bool reported_error = false;
+    bool get_rank = true;
 
     while (true) {
         int c = trusted_utils_read_char(input);
         if (c == TRUSTED_CHK_CLS_PRODUCE) {
-
             // parse
             u64 id = trusted_utils_read_ul(input);
             const int nb_lits = trusted_utils_read_int(input);
@@ -105,7 +106,11 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
             if (share) trusted_utils_write_sig(buf_sig, output);
 #if IMPCHECK_PLRAT
-            id = plrat_utils_get_next_valid_id(id, &offset, id_offsets,buf_hints->data, nb_hints);
+            if (get_rank) {
+                rank = id % nb_solvers;
+                get_rank = false;
+            }
+            id = plrat_utils_get_next_valid_id(id, &offset, id_offsets,buf_hints->data, nb_hints, nb_solvers, rank);
             last_id = id;
             trusted_utils_write_lrat_add(id, 
                 buf_lits->data, nb_lits,

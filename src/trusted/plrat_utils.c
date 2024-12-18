@@ -5,7 +5,7 @@
 #include "hash.h"
 #include "trusted_utils.h"
 
-u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints) {
+u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers, u64 rank) {
     u64 local_offset = *offset;
     u64 new_id = old_id + local_offset;
     u64 max_hint_id = plrat_utils_add_offset(id_offsets, hints, nb_hints);
@@ -16,6 +16,20 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
     }
 
     u64 new_offset = 1 + max_hint_id - old_id;
+    u64 temp_rank = new_offset % nb_solvers;
+
+    char msgstr3[512] = "";
+    snprintf(msgstr3, 512, "TEMP RANK:%lu rank:%lu new_offset:%lu nb_solvers:%lu", temp_rank, rank, new_offset, nb_solvers);
+    trusted_utils_log(msgstr3);
+
+    new_offset += nb_solvers - temp_rank;
+    
+    assert((new_offset % nb_solvers) == 0);
+
+    char msgstr4[512] = "";
+    snprintf(msgstr4, 512, "RANK:%lu new_offset:%lu",rank, new_offset);
+    trusted_utils_log(msgstr4);
+
     hash_table_insert(id_offsets, old_id, (void*)new_offset);
     *offset = new_offset;
     new_id = old_id + new_offset;
