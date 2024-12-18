@@ -110,7 +110,7 @@ int tc_run(bool check_model, bool lenient) {
                 rank = id % nb_solvers;
                 get_rank = false;
             }
-            id = plrat_utils_get_next_valid_id(id, &offset, id_offsets,buf_hints->data, nb_hints, nb_solvers, rank);
+            id = plrat_utils_get_next_valid_id(id, &offset, id_offsets,buf_hints->data, nb_hints, nb_solvers);
             last_id = id;
             trusted_utils_write_lrat_add(id, 
                 buf_lits->data, nb_lits,
