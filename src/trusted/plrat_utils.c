@@ -1,6 +1,7 @@
 #include "plrat_utils.h"
 
 #include <stdbool.h>  // for bool
+#include <assert.h>
 
 #include "hash.h"
 #include "trusted_utils.h"
