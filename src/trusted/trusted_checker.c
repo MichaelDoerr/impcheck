@@ -99,10 +99,9 @@ int tc_run(bool check_model, bool lenient) {
             const bool share = trusted_utils_read_bool(input);
             // forward to checker
             bool res = top_check_produce(id, buf_lits->data, nb_lits,
-                buf_hints->data, nb_hints, share ? buf_sig : 0);
+                buf_hints->data, nb_hints);
             // respond
             say(res);
-            if (share) trusted_utils_write_sig(buf_sig, output);
 #if IMPCHECK_PLRAT
             id = plrat_utils_get_next_valid_id(id, &offset, id_offsets,buf_hints->data, nb_hints, nb_solvers);
             last_id = id;
@@ -110,6 +109,19 @@ int tc_run(bool check_model, bool lenient) {
                 buf_lits->data, nb_lits,
                 buf_hints->data, nb_hints);
 #endif
+            if (share) {
+                // compute signature if desired
+                top_check_compute_clause_signature(id, buf_lits->data, nb_lits, buf_sig);
+    
+#if IMPCHECK_PLRAT
+                trusted_utils_write_id(&id, output);
+
+                //char msgstr2[512] = "";
+                //snprintf(msgstr2, 512, "send! id:%lu ", id);
+                //trusted_utils_log(msgstr2);
+#endif
+                trusted_utils_write_sig(buf_sig, output);
+            }
 #if IMPCHECK_FLUSH_ALWAYS
             UNLOCKED_IO(fflush)(output);
 #endif

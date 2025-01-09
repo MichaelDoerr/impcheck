@@ -13,7 +13,7 @@ signature formula_signature;
 bool valid = true;
 
 
-void compute_clause_signature(u64 id, const int* lits, int nb_lits, u8* out) {
+void top_check_compute_clause_signature(u64 id, const int* lits, int nb_lits, u8* out) {
     siphash_reset();
     siphash_update((u8*) &id, sizeof(u64));
     siphash_update((u8*) lits, nb_lits*sizeof(int));
@@ -48,15 +48,11 @@ bool top_check_end_load() {
 }
 
 bool top_check_produce(unsigned long id, const int* literals, int nb_literals,
-    const unsigned long* hints, int nb_hints, u8* out_sig_or_null) {
+    const unsigned long* hints, int nb_hints) {
     
     // forward clause to checker
     valid &= lrat_check_add_clause(id, literals, nb_literals, hints, nb_hints);
     if (!valid) return false;
-    // compute signature if desired
-    if (out_sig_or_null) {
-        compute_clause_signature(id, literals, nb_literals, out_sig_or_null);
-    }
     return true;
 }
 
@@ -65,7 +61,7 @@ bool top_check_import(unsigned long id, const int* literals, int nb_literals,
     
     // verify signature
     signature computed_sig;
-    compute_clause_signature(id, literals, nb_literals, computed_sig);
+    top_check_compute_clause_signature(id, literals, nb_literals, computed_sig);
     if (!trusted_utils_equal_signatures(signature_data, computed_sig)) {
         valid = false;
         snprintf(trusted_utils_msgstr, 512, "Signature check of clause %lu failed", id);
