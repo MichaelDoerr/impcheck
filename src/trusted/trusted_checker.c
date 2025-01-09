@@ -112,13 +112,8 @@ int tc_run(bool check_model, bool lenient) {
             if (share) {
                 // compute signature if desired
                 top_check_compute_clause_signature(id, buf_lits->data, nb_lits, buf_sig);
-    
 #if IMPCHECK_PLRAT
-                trusted_utils_write_id(&id, output);
-
-                //char msgstr2[512] = "";
-                //snprintf(msgstr2, 512, "send! id:%lu ", id);
-                //trusted_utils_log(msgstr2);
+                trusted_utils_write_ul(id, output);
 #endif
                 trusted_utils_write_sig(buf_sig, output);
             }

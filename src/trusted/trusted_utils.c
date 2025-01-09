@@ -201,9 +201,6 @@ void trusted_utils_write_uls(const u64* data, u64 nb_uls, FILE* file) {
 void trusted_utils_write_sig(const u8* sig, FILE* file) {
     write_objs(sig, sizeof(int), 4, file);
 }
-void trusted_utils_write_id(const u64* id, FILE* file) {
-    write_objs(id, sizeof(u64), 1, file);
-}
 
 void trusted_utils_sig_to_str(const u8* sig, char* out) {
     for (int charpos = 0; charpos < SIG_SIZE_BYTES; charpos++) {
