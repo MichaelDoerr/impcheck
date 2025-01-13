@@ -103,7 +103,10 @@ int tc_run(bool check_model, bool lenient) {
             // respond
             say(res);
 #if IMPCHECK_PLRAT
-            id = plrat_utils_get_next_valid_id(id, &offset, id_offsets,buf_hints->data, nb_hints, nb_solvers);
+            id = plrat_utils_get_next_valid_id(id, &offset, 
+            id_offsets, buf_hints->data, nb_hints, nb_solvers);
+
+            assert(last_id < id);
             last_id = id;
             trusted_utils_write_lrat_add(id, 
                 buf_lits->data, nb_lits,
