@@ -8,6 +8,7 @@
 #include "checker_interface.h"
 #include "hash.h"
 #include "plrat_utils.h"
+#include <assert.h>
 
 // Instantiate int_vec
 #define TYPE int

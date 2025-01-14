@@ -1,6 +1,9 @@
 
 #include "trusted/trusted_utils.h"
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <assert.h>
 
 #if IMPCHECK_WRITE_DIRECTIVES
@@ -9,6 +12,14 @@ FILE* f_writer = 0;
 void writer_init(char* output_path) {
     f_writer = fopen(output_path, "w");
     if (!f_writer) trusted_utils_exit_eof();
+}
+
+void writer_create_dir(char* dir_path){
+    struct stat st = {0};
+
+    if (stat(dir_path, &st) == -1) {
+        mkdir(dir_path, 0700);
+    }
 }
 
 void write_bool(bool b) {
