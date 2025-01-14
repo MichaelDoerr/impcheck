@@ -23,18 +23,14 @@ int main(int argc, char *argv[]) {
     }
 
 #if IMPCHECK_WRITE_DIRECTIVES
-    char output_dir[512];
-    char full_output_path[512];
+    char output_path[512];
     #if IMPCHECK_PLRAT
-        snprintf(output_dir, 512, "%s/%i", dir_path, getpid());
-        writer_create_dir(output_dir);
-        trusted_utils_log(output_dir);
-        snprintf(full_output_path, 512, "%s/out.plrat", output_dir);
-        trusted_utils_log(full_output_path);
+        snprintf(output_path, 512, "%s/%i.plrat", dir_path, getpid());
+        trusted_utils_log(output_path);
     #else
-        snprintf(full_output_path, 512, "directives.%i.impcheck", getpid());
+        snprintf(output_path, 512, "directives.%i.impcheck", getpid());
     #endif
-    writer_init(full_output_path);
+    writer_init(output_path);
 #endif
 
     tc_init(fifo_directives, fifo_feedback, num_solvers);

@@ -14,14 +14,6 @@ void writer_init(char* output_path) {
     if (!f_writer) trusted_utils_exit_eof();
 }
 
-void writer_create_dir(char* dir_path){
-    struct stat st = {0};
-
-    if (stat(dir_path, &st) == -1) {
-        mkdir(dir_path, 0700);
-    }
-}
-
 void write_bool(bool b) {
     if (!f_writer) return;
 #if IMPCHECK_WRITE_DIRECTIVES == 1
