@@ -10,7 +10,7 @@
 
 int main(int argc, char *argv[]) {
 
-    const char *fifo_directives = "", *fifo_feedback = "", *dir_path = "";
+    const char *fifo_directives = "", *fifo_feedback = "", *dir_path = ".";
     bool check_model = false, lenient = false;
     u64 num_solvers = 0;
     for (int i = 1; i < argc; i++) {
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
         snprintf(output_dir, 512, "%s/%i", dir_path, getpid());
         writer_create_dir(output_dir);
         trusted_utils_log(output_dir);
-        snprintf(full_output_path, 512, "%s/out.PLRAT", output_dir);
+        snprintf(full_output_path, 512, "%s/out.plrat", output_dir);
         trusted_utils_log(full_output_path);
     #else
         snprintf(full_output_path, 512, "directives.%i.impcheck", getpid());
