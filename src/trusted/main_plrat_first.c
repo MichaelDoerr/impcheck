@@ -3,6 +3,7 @@
 #include <stdio.h>            // for fflush, stdout
 //#include "trusted_checker.h"  // for tc_init, tc_run
 #include "trusted_utils.h"    // for trusted_utils_try_match_arg, trusted_ut...
+#include "plrat_utils.h"    // for trusted_utils_try_match_arg, trusted_ut...
 //#if IMPCHECK_WRITE_DIRECTIVES
 //#include <unistd.h>
 //#include "../writer.h"
@@ -24,7 +25,7 @@ int main(int argc, char *argv[]) {
     char output_path[512];
     snprintf(output_path, 512, "-formula-path=%s -proofs-path=%s num-solvers=%lu -solver-id=%lu -redistribution-strategy=%lu",
     formula_path, proofs_path, num_solvers, solver_id, redistribution_strategy);
-    trusted_utils_log(output_path);
+    plrat_utils_log(output_path);
 
     fflush(stdout);
     return 0;

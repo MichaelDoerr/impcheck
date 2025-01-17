@@ -6,6 +6,8 @@
 #include "hash.h"
 #include "trusted_utils.h"
 
+#include <unistd.h> // getpid
+
 u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers) {
     u64 local_offset = *offset;
     u64 new_id = old_id + local_offset;
@@ -64,4 +66,8 @@ void plrat_utils_translate_and_delete(struct hash_table* id_offsets, u64* hints,
             hash_table_delete(id_offsets, original_id);  // delete id
         }
     }
+}
+
+void plrat_utils_log(const char* msg) {
+    printf("p [PLRAT_CHECKER %i] %s\n", getpid(), msg);
 }

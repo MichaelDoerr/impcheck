@@ -23,7 +23,7 @@ add_executable(impcheck_confirm
     src/trusted/confirm.c src/trusted/hash.c src/trusted/secret.c src/trusted/siphash.c src/trusted/trusted_parser.c src/trusted/trusted_utils.c src/trusted/vectors.c src/writer.c 
     src/trusted/main_confirm.c)
 add_executable(plrat_first_pass
-    src/trusted/trusted_utils.c src/writer.c src/trusted/main_plrat_first.c )
+    src/trusted/trusted_utils.c src/trusted/plrat_utils.c src/writer.c src/trusted/main_plrat_first.c )
 
 add_executable(test_hash src/trusted/trusted_utils.c src/trusted/hash.c src/writer.c test/test.c
     test/test_hash.c)

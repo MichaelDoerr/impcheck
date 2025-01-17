@@ -11,3 +11,5 @@ u64 plrat_utils_get_next_valid_id(const u64 id, u64* offset, struct hash_table* 
 
 // Mutate hints and delete hints from hash_table
 void plrat_utils_translate_and_delete(struct hash_table* id_offsets, u64* hints, int nb_hints);
+
+void plrat_utils_log(const char* msg);
