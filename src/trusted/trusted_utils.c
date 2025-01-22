@@ -180,17 +180,19 @@ void trusted_utils_write_lrat_import(u64 last_id, u64 clause_id, int* literals, 
 }
 
 void trusted_utils_write_lrat_load(char c, int* literals, int nb_literals) {    
+    
+#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_char_raw(c);
-#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_char_raw(' ');
-#endif
     write_int(nb_literals);
-#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_char_raw(' ');
-#endif
     write_ints(literals, nb_literals);
-#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_char_raw('\n');
+#endif
+#if IMPCHECK_WRITE_DIRECTIVES == 1
+    write_char_raw(c);
+    write_int(nb_literals);
+    write_ints(literals, nb_literals);
 #endif
 }
 

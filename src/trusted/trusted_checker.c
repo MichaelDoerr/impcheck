@@ -164,6 +164,10 @@ int tc_run(bool check_model, bool lenient) {
             for (int i = 0; i < nb_lits; i++) top_check_load(buf_lits->data[i]);
 #if IMPCHECK_PLRAT
             trusted_utils_write_lrat_load(TRUSTED_CHK_LOAD, buf_lits->data, nb_lits);
+            
+            char o[512];
+            snprintf(o, 512, "HEEEY %i", nb_lits);
+            trusted_utils_log(o);
 #endif
 
         } else if (c == TRUSTED_CHK_INIT) {
