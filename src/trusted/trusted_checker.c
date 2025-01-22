@@ -174,13 +174,13 @@ int tc_run(bool check_model, bool lenient) {
             top_check_commit_formula_sig(formula_sig);
             say_with_flush(true);
 #if IMPCHECK_PLRAT
-            trusted_utils_write_int(nb_vars, output);
+            trusted_utils_write_init(TRUSTED_CHK_INIT, nb_vars);
 #endif
         } else if (c == TRUSTED_CHK_END_LOAD) {
 
             say_with_flush(top_check_end_load());
 #if IMPCHECK_PLRAT
-            trusted_utils_write_char(TRUSTED_CHK_END_LOAD, output);
+            trusted_utils_write_end_load(TRUSTED_CHK_END_LOAD);
 #endif
         } else if (c == TRUSTED_CHK_VALIDATE_UNSAT) {
 

@@ -194,6 +194,18 @@ void trusted_utils_write_lrat_load(char c, int* literals, int nb_literals) {
 #endif
 }
 
+void trusted_utils_write_init(char c, int nb_literals){
+#if IMPCHECK_WRITE_DIRECTIVES == 1
+    write_char_raw(c);
+    write_int(nb_literals);
+#endif
+}
+
+void trusted_utils_write_end_load(char c){
+#if IMPCHECK_WRITE_DIRECTIVES == 1
+    write_char_raw(c);
+#endif
+}
 
 
 #endif //# end IMPCHECK_PLRAT
