@@ -3,7 +3,8 @@
 #include <stdio.h>            // for fflush, stdout
 //#include "trusted_checker.h"  // for tc_init, tc_run
 #include "trusted_utils.h"    // for trusted_utils_try_match_arg, trusted_ut...
-#include "plrat_utils.h"    // for trusted_utils_try_match_arg, trusted_ut...
+#include "plrat_utils.h"
+#include "plrat_checker.h"
 //#if IMPCHECK_WRITE_DIRECTIVES
 //#include <unistd.h>
 //#include "../writer.h"
@@ -27,6 +28,11 @@ int main(int argc, char *argv[]) {
     formula_path, proofs_path, num_solvers, solver_id, redistribution_strategy);
     plrat_utils_log(output_path);
 
+    char proof_path[512];
+    snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
+
+    pc_init(formula_path, proof_path, num_solvers);
+    int res = pc_run();
     fflush(stdout);
-    return 0;
+    return res;
 }

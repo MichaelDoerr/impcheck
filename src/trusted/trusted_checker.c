@@ -162,7 +162,9 @@ int tc_run(bool check_model, bool lenient) {
             const int nb_lits = trusted_utils_read_int(input);
             read_literals(nb_lits);
             for (int i = 0; i < nb_lits; i++) top_check_load(buf_lits->data[i]);
-            // NO FEEDBACK
+#if IMPCHECK_PLRAT
+            trusted_utils_write_lrat_load(TRUSTED_CHK_LOAD, buf_lits->data, nb_lits);
+#endif
 
         } else if (c == TRUSTED_CHK_INIT) {
 
@@ -171,11 +173,15 @@ int tc_run(bool check_model, bool lenient) {
             trusted_utils_read_sig(formula_sig, input);
             top_check_commit_formula_sig(formula_sig);
             say_with_flush(true);
-
+#if IMPCHECK_PLRAT
+            trusted_utils_write_int(nb_vars, output);
+#endif
         } else if (c == TRUSTED_CHK_END_LOAD) {
 
             say_with_flush(top_check_end_load());
-
+#if IMPCHECK_PLRAT
+            trusted_utils_write_char(TRUSTED_CHK_END_LOAD, output);
+#endif
         } else if (c == TRUSTED_CHK_VALIDATE_UNSAT) {
 
             bool res = top_check_validate_unsat(buf_sig);

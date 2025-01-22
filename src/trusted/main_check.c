@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 #if IMPCHECK_WRITE_DIRECTIVES
     char output_path[512];
     #if IMPCHECK_PLRAT
-        snprintf(output_path, 512, "%s/%i.plrat", dir_path, getpid());
+        snprintf(output_path, 512, "%s/out.plrat", dir_path);
         trusted_utils_log(output_path);
     #else
         snprintf(output_path, 512, "directives.%i.impcheck", getpid());
