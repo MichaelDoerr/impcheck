@@ -137,27 +137,40 @@ void trusted_utils_read_sig(u8* out_sig, FILE* file) {
 
 void trusted_utils_write_lrat_add(u64 id, int* literals, int nb_literals,
     u64* hints, int nb_hints) {
+#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_ul(id);
     write_ints(literals, nb_literals);
     write_int(0);
     write_uls(hints, nb_hints);
     write_int(0);
-#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_char_raw('\n');
+#endif
+#if IMPCHECK_WRITE_DIRECTIVES == 1
+    write_char_raw('a');
+    write_ul(id);
+    write_ints(literals, nb_literals);
+    write_int(0);
+    write_uls(hints, nb_hints);
+    write_int(0);
 #endif
 }
 
 void trusted_utils_write_lrat_delete(u64 last_id, u64* hints, int nb_hints) {
+#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_ul(last_id);
     write_char_raw('d');
-#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_char_raw(' ');
-#endif
     write_uls(hints, nb_hints);
     write_int(0);
-#if IMPCHECK_WRITE_DIRECTIVES == 2
     write_char_raw('\n');
 #endif
+#if IMPCHECK_WRITE_DIRECTIVES == 1
+    last_id = last_id;
+    write_char_raw('d');
+    write_uls(hints, nb_hints);
+    write_int(0);
+#endif
+
 }
 
 void trusted_utils_write_lrat_import(u64 last_id, u64 clause_id, int* literals, int nb_literals) {    
@@ -197,6 +210,12 @@ void trusted_utils_write_lrat_load(char c, int* literals, int nb_literals) {
 }
 
 void trusted_utils_write_init(char c, int nb_literals){
+#if IMPCHECK_WRITE_DIRECTIVES == 2
+    write_char_raw(c);
+    write_char_raw(' ');
+    write_int(nb_literals);
+    write_char_raw('\n');
+#endif
 #if IMPCHECK_WRITE_DIRECTIVES == 1
     write_char_raw(c);
     write_int(nb_literals);
@@ -204,6 +223,10 @@ void trusted_utils_write_init(char c, int nb_literals){
 }
 
 void trusted_utils_write_end_load(char c){
+#if IMPCHECK_WRITE_DIRECTIVES == 2
+    write_char_raw(c);
+    write_char_raw('\n');
+#endif
 #if IMPCHECK_WRITE_DIRECTIVES == 1
     write_char_raw(c);
 #endif
