@@ -29,6 +29,7 @@ FILE* formular; // named pipe
 int nb_vars; // # variables in formula
 signature formula_sig; // formula signature
 u64 nb_solvers; // number of solvers
+u64 redist; // redistribution_strategy
 
 bool do_logging = true;
 
@@ -36,22 +37,6 @@ bool do_logging = true;
 signature buf_sig;
 struct int_vec* buf_lits;
 struct u64_vec* buf_hints;
-
-
-int _sign = 1;
-bool _comment = false;
-bool _began_num = false;
-bool _assumption = false;
-int _num = 0;
-int _max_var = 0;
-int _num_read_clauses = 0;
-bool _last_added_lit_was_zero = true;
-bool _contains_empty_clause = false;
-
-
-bool _input_invalid = false;
-bool _input_finished = false;
-
 
 void read_literals(int nb_lits) {
     int_vec_reserve(buf_lits, nb_lits);
@@ -63,7 +48,7 @@ void read_hints(int nb_hints) {
     trusted_utils_read_uls(buf_hints->data, nb_hints, proof);
 }
 
-void pc_init(const char* formula_path, const char* proof_path, unsigned long num_solvers) {
+void pc_init(const char* formula_path, const char* proof_path, unsigned long num_solvers, unsigned long redistribution_strategy) {
     proof = fopen(proof_path, "r");
     if (!proof) trusted_utils_exit_eof();
     formular = fopen(formula_path, "r");
@@ -137,6 +122,7 @@ int pc_run() {
             nb_imported++;
 
             // write in file for stage 2
+            plrat_utils_write_import_file(id, buf_lits->data, nb_lits, redist);
 
         } else if (c == TRUSTED_CHK_CLS_DELETE) {
             // parse
@@ -167,68 +153,4 @@ int pc_run() {
     trusted_utils_log(trusted_utils_msgstr);
 
     return 0;
-}
-
-inline void process(char c) {
-
-    if (_comment && c != '\n') return;
-
-    signed char uc = *((signed char*) &c);
-    switch (uc) {
-    case EOF:
-        _input_finished = true;
-    case '\n':
-    case '\r':
-        _comment = false;
-        if (_began_num) {
-            if (_num != 0) {
-                _input_invalid = true;
-                return;
-            }
-            if (!_assumption) {
-                //desc.addPermanentData(0);
-                if (_last_added_lit_was_zero) _contains_empty_clause = true;
-                _last_added_lit_was_zero = true;
-                _num_read_clauses++;
-            }
-            _began_num = false;
-        }
-        _assumption = false;
-        break;
-    case 'p':
-    case 'c':
-        _comment = true;
-        break;
-    case 'a':
-        _assumption = true;
-        break;
-    case ' ':
-        if (_began_num) {
-            //_max_var = std::max(_max_var, _num);
-            if (!_assumption) {
-                int lit = _sign * _num;
-                //desc.addPermanentData(lit);
-                if (lit == 0) {
-                    if (_last_added_lit_was_zero) _contains_empty_clause = true;
-                    _num_read_clauses++;
-                }
-                _last_added_lit_was_zero = lit == 0;
-            } else if (_num != 0) {
-                //desc.addTransientData(_sign * _num);
-            }
-            _num = 0;
-            _began_num = false;
-        }
-        _sign = 1;
-        break;
-    case '-':
-        _sign = -1;
-        _began_num = true;
-        break;
-    default:
-        // Add digit to current number
-        _num = _num*10 + (c-'0');
-        _began_num = true;
-        break;
-    }
 }
