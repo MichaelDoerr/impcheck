@@ -82,20 +82,36 @@ void pc_end() {
 
 int pc_run() {
     clock_t start = clock();
-
     u64 nb_produced = 0, nb_imported = 0, nb_deleted = 0;
+    bool reported_error = false;
+    char c = '\0';
 
-    nb_vars = trusted_utils_read_int(proof);
-    top_check_init(nb_vars, false, false);
+    c = trusted_utils_read_char(proof);
+    if(c == TRUSTED_CHK_INIT) {
+        nb_vars = trusted_utils_read_int(proof);
+        top_check_init(nb_vars, false, false);
+    } else {
+        trusted_utils_log_err("Invalid INIT");
+        reported_error = true;
+    }
 
-    char c = trusted_utils_read_char(proof);
-
-    while (c == TRUSTED_CHK_LOAD) {    
+    c = trusted_utils_read_char(proof);
+    if (c == TRUSTED_CHK_LOAD) {    
             const int nb_lits = trusted_utils_read_int(proof);
             read_literals(nb_lits);
             for (int i = 0; i < nb_lits; i++) top_check_load(buf_lits->data[i]);
+    } else {
+        trusted_utils_log_err("Invalid LOAD");
+        reported_error = true;
     }
-    bool reported_error = false;
+
+    c = trusted_utils_read_char(proof);
+    if(c == TRUSTED_CHK_END_LOAD) {
+        trusted_utils_log("Formular Loaded");
+    } else {
+        trusted_utils_log_err("Invalid END_LOAD");
+        reported_error = true;
+    }
 
     while (true) {
         int c = trusted_utils_read_char(proof);
@@ -106,77 +122,29 @@ int pc_run() {
             read_literals(nb_lits);
             const int nb_hints = trusted_utils_read_int(proof);
             read_hints(nb_hints);
-            const bool share = trusted_utils_read_bool(proof);
             // forward to checker
             top_check_produce(id, buf_lits->data, nb_lits,
                 buf_hints->data, nb_hints);
-            if (share) {
-                // compute signature if desired
-                top_check_compute_clause_signature(id, buf_lits->data, nb_lits, buf_sig);
-                trusted_utils_write_sig(buf_sig, formular);
-            }
-#if IMPCHECK_FLUSH_ALWAYS
-            UNLOCKED_IO(fflush)(formular);
-#endif
             nb_produced++;
 
         } else if (c == TRUSTED_CHK_CLS_IMPORT) {
-
             // parse
             const u64 id = trusted_utils_read_ul(proof);
             const int nb_lits = trusted_utils_read_int(proof);
             read_literals(nb_lits);
-            trusted_utils_read_sig(buf_sig, proof);
             // forward to checker
-            top_check_import(id, buf_lits->data, nb_lits, buf_sig);
+            plrat_utils_import_unchecked(id, buf_lits->data, nb_lits);
             nb_imported++;
 
+            // write in file for stage 2
+
         } else if (c == TRUSTED_CHK_CLS_DELETE) {
-            
             // parse
             const int nb_hints = trusted_utils_read_int(proof);
             read_hints(nb_hints);
             // forward to checker
             top_check_delete(buf_hints->data, nb_hints);
             nb_deleted += nb_hints;
-
-        } else if (c == TRUSTED_CHK_LOAD) {
-
-            const int nb_lits = trusted_utils_read_int(proof);
-            read_literals(nb_lits);
-            for (int i = 0; i < nb_lits; i++) {
-                top_check_load(buf_lits->data[i]);   
-            }
-            // NO FEEDBACK
-
-        } else if (c == TRUSTED_CHK_INIT) {
-
-
-            //trusted_utils_read_sig(formula_sig, proof);
-            //top_check_commit_formula_sig(formula_sig);
-            //say_with_flush(true);
-
-        } else if (c == TRUSTED_CHK_END_LOAD) {
-
-            //say_with_flush(top_check_end_load());
-
-        } else if (c == TRUSTED_CHK_VALIDATE_UNSAT) {
-
-            bool res = top_check_validate_unsat(buf_sig);
-            trusted_utils_write_sig(buf_sig, formular);
-            UNLOCKED_IO(fflush)(formular);
-            if (res) trusted_utils_log("UNSAT validated");
-
-        } else if (c == TRUSTED_CHK_VALIDATE_SAT) {
-
-            const int model_size = trusted_utils_read_int(proof);
-            int* model = trusted_utils_malloc(sizeof(int) * model_size); // exits if error
-            trusted_utils_read_ints(model, model_size, proof);
-            bool res = top_check_validate_sat(model, model_size, buf_sig);
-            trusted_utils_write_sig(buf_sig, formular);
-            UNLOCKED_IO(fflush)(formular);
-            if (res) trusted_utils_log("SAT validated");
-            free(model);
 
         } else if (c == TRUSTED_CHK_TERMINATE) {
 

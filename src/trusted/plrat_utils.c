@@ -4,6 +4,7 @@
 
 #include "hash.h"
 #include "trusted_utils.h"
+#include "lrat_check.h"
 
 #include <unistd.h> // getpid
 
@@ -65,6 +66,11 @@ void plrat_utils_translate_and_delete(struct hash_table* id_offsets, u64* hints,
             hash_table_delete(id_offsets, original_id);  // delete id
         }
     }
+}
+
+bool plrat_utils_import_unchecked(unsigned long id, const int* literals, int nb_literals) {
+    // signature is veryfied in later stages - forward clause to checker as an axiom
+    return lrat_check_add_axiomatic_clause(id, literals, nb_literals);
 }
 
 void plrat_utils_log(const char* msg) {

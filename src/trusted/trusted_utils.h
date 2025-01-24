@@ -19,6 +19,8 @@
 #define UNLOCKED_IO(fun) fun
 #endif
 
+#define UNUSED(x) (void)(x) // for unusesd variables because of DIMPCHECK_WRITE_DIRECTIVES
+
 typedef unsigned long u64;
 typedef unsigned int u32;
 typedef unsigned char u8;
@@ -66,6 +68,7 @@ void trusted_utils_write_lrat_import(u64 last_id, u64 clause_id, int* literals, 
 void trusted_utils_write_lrat_load(char c, int* literals, int nb_literals);
 void trusted_utils_write_init(char c, int nb_literals);
 void trusted_utils_write_end_load(char c);
+void trusted_utils_write_terminate(char c);
 
 void trusted_utils_sig_to_str(const u8* sig, char* out);
 bool trusted_utils_str_to_sig(const char* str, u8* out);

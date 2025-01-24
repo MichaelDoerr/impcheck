@@ -207,7 +207,9 @@ int tc_run(bool check_model, bool lenient) {
             free(model);
 
         } else if (c == TRUSTED_CHK_TERMINATE) {
-
+#if IMPCHECK_PLRAT
+            trusted_utils_write_terminate(TRUSTED_CHK_TERMINATE);
+#endif
             say_with_flush(true);
             break;
 
