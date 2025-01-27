@@ -10,6 +10,13 @@
 #include "plrat_utils.h"
 #include <assert.h>
 
+struct clause
+{
+    unsigned long id;
+    unsigned long start;
+    unsigned int nb_lits;
+};
+
 // Instantiate int_vec
 #define TYPE int
 #define TYPED(THING) int_ ## THING
@@ -17,53 +24,77 @@
 #undef TYPED
 #undef TYPE
 
-// Instantiate u64_vec
-#define TYPE u64
-#define TYPED(THING) u64_ ## THING
+// Instantiate clause_vec
+#define TYPE struct clause
+#define TYPED(THING) clause_ ## THING
 #include "vec.h"
 #undef TYPED
 #undef TYPE
 
-FILE* proof; // named pipe
-FILE* formular; // named pipe
-int nb_vars; // # variables in formula
-signature formula_sig; // formula signature
+const char* out_path; // named pipe
 u64 nb_solvers; // number of solvers
 u64 redist; // redistribution_strategy
 
-bool do_logging = true;
 
 // Buffering.
-signature buf_sig;
-struct int_vec* buf_lits;
-struct u64_vec* buf_hints;
+struct int_vec* all_lits;
+struct clause_vec* clauses;
+FILE** importfiles;
 
-void read_literals(int nb_lits) {
-    int_vec_reserve(buf_lits, nb_lits);
-    trusted_utils_read_ints(buf_lits->data, nb_lits, proof);
-}
 
-void read_hints(int nb_hints) {
-    u64_vec_reserve(buf_hints, nb_hints);
-    trusted_utils_read_uls(buf_hints->data, nb_hints, proof);
-}
 
-void plrat_importer_init(const char* main_path, unsigned long num_solvers, unsigned long redistribution_strategy) {
-    // For each i in num_solvers: proof = fopen(proof_path + "(i)", "w");
-    //      if (!proof) trusted_utils_exit_eof();
-    // init vec of clause ids
-    // init ht of imported clauses with (clause id) -> (literals pointer)
-
+void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
+    redist = redistribution_strategy;
     nb_solvers = num_solvers;
+    out_path = main_path;
+    all_lits = int_vec_init(1024);
+    clauses = clause_vec_init(128);
+    importfiles = trusted_utils_malloc(sizeof(FILE*) * num_solvers);
+
+    for (size_t i = 0; i < nb_solvers; i++) {
+        char proof_path[512];
+        snprintf(proof_path, 512, "%s/%lu/%lu.plrat_import", out_path, i, solver_id);
+        importfiles[i] = fopen(proof_path, "w");
+        if (!out_path) trusted_utils_exit_eof();
+    }
 }
 
 void plrat_importer_end() {
-    free(buf_hints);
-    free(buf_lits);
-    fclose(formular);
-    fclose(proof);
+    u32 origin_index;
+    struct clause current_clause;
+    u64 current_clause_id;
+    FILE* current_out;
+    for (size_t c = 0; c < clauses->size; c++){
+        current_clause = clauses->data[c];
+        current_clause_id = current_clause.id;
+        origin_index = current_clause_id % nb_solvers;
+        current_out = importfiles[origin_index];
+        trusted_utils_write_ul(current_clause_id, current_out);
+        trusted_utils_write_int(current_clause.nb_lits, current_out);
+        trusted_utils_write_ints(
+            &(all_lits->data[current_clause.start]),
+            current_clause.nb_lits,
+            current_out);
+    }
+
+    for (size_t i = 0; i < nb_solvers; i++) {
+        fclose(importfiles[i]);
+    }
+    free(importfiles);   
+    free(all_lits->data);
+    free(clauses->data);
+    free(all_lits);
+    free(clauses);
 }
 
-int plrat_importer_log(unsigned long id, const int* literals, int nb_literals) {
-    
+void plrat_importer_log(unsigned long id, const int* literals, int nb_literals) {
+    struct clause _clause;
+    _clause.id = id;
+    _clause.nb_lits = nb_literals;
+    _clause.start = all_lits->size;
+    clause_vec_push(clauses, _clause);
+
+    for (int i = 0; i < nb_literals; i++) {
+        int_vec_push(all_lits,literals[i]);
+    }
 }

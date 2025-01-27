@@ -73,10 +73,6 @@ bool plrat_utils_import_unchecked(unsigned long id, const int* literals, int nb_
     return lrat_check_add_axiomatic_clause(id, literals, nb_literals);
 }
 
-void plrat_utils_write_import_file(unsigned long id, const int* literals, int nb_literals, u64 redistribution_strategy) {
-
-}
-
 void plrat_utils_log(const char* msg) {
     printf("p [PLRAT_CHECKER %i] %s\n", getpid(), msg);
 }

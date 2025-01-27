@@ -8,6 +8,7 @@
 #include "checker_interface.h"
 #include "hash.h"
 #include "plrat_utils.h"
+#include "plrat_importer.h"
 #include <assert.h>
 
 // Instantiate int_vec
@@ -48,7 +49,7 @@ void read_hints(int nb_hints) {
     trusted_utils_read_uls(buf_hints->data, nb_hints, proof);
 }
 
-void pc_init(const char* formula_path, const char* proof_path, unsigned long num_solvers, unsigned long redistribution_strategy) {
+void pc_init(const char* formula_path, const char* proof_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
     proof = fopen(proof_path, "r");
     if (!proof) trusted_utils_exit_eof();
     formular = fopen(formula_path, "r");
@@ -56,6 +57,7 @@ void pc_init(const char* formula_path, const char* proof_path, unsigned long num
     buf_lits = int_vec_init(1 << 14);
     buf_hints = u64_vec_init(1 << 14);
     nb_solvers = num_solvers;
+    plrat_importer_init(proof_path, solver_id, num_solvers, redistribution_strategy);
 }
 
 void pc_end() {
@@ -122,7 +124,7 @@ int pc_run() {
             nb_imported++;
 
             // write in file for stage 2
-            plrat_utils_write_import_file(id, buf_lits->data, nb_lits, redist);
+            plrat_importer_log(id, buf_lits->data, nb_lits);
 
         } else if (c == TRUSTED_CHK_CLS_DELETE) {
             // parse
