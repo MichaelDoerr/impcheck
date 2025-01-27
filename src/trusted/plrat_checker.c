@@ -102,9 +102,9 @@ int pc_run() {
 
     c = trusted_utils_read_char(proof);
     if(c == TRUSTED_CHK_END_LOAD) {
-        trusted_utils_log("Formular Loaded");
+        plrat_utils_log("Formular Loaded");
     } else {
-        trusted_utils_log_err("Invalid END_LOAD");
+        plrat_utils_log_err("Invalid END_LOAD");
         reported_error = true;
     }
 

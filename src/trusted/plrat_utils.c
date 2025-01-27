@@ -76,3 +76,7 @@ bool plrat_utils_import_unchecked(unsigned long id, const int* literals, int nb_
 void plrat_utils_log(const char* msg) {
     printf("p [PLRAT_CHECKER %i] %s\n", getpid(), msg);
 }
+
+void plrat_utils_log_err(const char* msg) {
+    printf("p [PLRAT_CHECKER %i] [ERROR] %s\n", getpid(), msg);
+}

@@ -39,19 +39,19 @@ FILE** importfiles;
 
 void plrat_utils_write_lrat_import_file(u64 clause_id, int* literals, int nb_literals, FILE* current_out) {    
     
-    //fprintf(current_out, "%lu ", clause_id);
-    //fprintf(current_out, " ");
-    //fprintf(current_out, "n:%i", nb_literals);
-    //fprintf(current_out, " ");
-    //for (int i = 0; i < nb_literals; i++) {
-    //    fprintf(current_out, "%i ", literals[i]);
-    //}
-    //fprintf(current_out, "%i", 0);
-    //fprintf(current_out, "\n");
+    fprintf(current_out, "%lu ", clause_id);
+    fprintf(current_out, " ");
+    fprintf(current_out, "n:%i", nb_literals);
+    fprintf(current_out, " ");
+    for (int i = 0; i < nb_literals; i++) {
+        fprintf(current_out, "%i ", literals[i]);
+    }
+    fprintf(current_out, "%i", 0);
+    fprintf(current_out, "\n");
 
-    trusted_utils_write_ul(clause_id, current_out);
-    trusted_utils_write_int(nb_literals, current_out);
-    trusted_utils_write_ints(literals, nb_literals, current_out);
+    //trusted_utils_write_ul(clause_id, current_out);
+    //trusted_utils_write_int(nb_literals, current_out);
+    //trusted_utils_write_ints(literals, nb_literals, current_out);
 
 }
 
@@ -72,11 +72,21 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     }
 }
 
+int compare_clause( const void* a, const void* b) {
+    u64 id_a = ((struct clause*)a)->id;
+    u64 id_b = ((struct clause*)b)->id;
+    return (id_a - id_b);
+}
+
+
 void plrat_importer_end() {
     u32 origin_index;
     struct clause current_clause;
     u64 current_clause_id;
     FILE* current_out;
+
+    qsort(clauses->data, clauses->size, sizeof(struct clause), compare_clause);
+
     for (size_t c = 0; c < clauses->size; c++){
         current_clause = clauses->data[c];
         current_clause_id = current_clause.id;
