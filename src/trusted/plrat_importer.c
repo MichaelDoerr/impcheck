@@ -87,6 +87,8 @@ void plrat_importer_end() {
 
     qsort(clauses->data, clauses->size, sizeof(struct clause), compare_clause);
 
+    //missing: write clauses->size in file once
+
     for (size_t c = 0; c < clauses->size; c++){
         current_clause = clauses->data[c];
         current_clause_id = current_clause.id;
