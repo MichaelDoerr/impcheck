@@ -9,20 +9,7 @@
 #include "hash.h"
 #include "plrat_utils.h"
 #include <assert.h>
-
-struct clause
-{
-    unsigned long id;
-    unsigned long start;
-    unsigned int nb_lits;
-};
-
-// Instantiate int_vec
-#define TYPE int
-#define TYPED(THING) int_ ## THING
-#include "vec.h"
-#undef TYPED
-#undef TYPE
+#include "clause.h"
 
 // Instantiate clause_vec
 #define TYPE struct clause
@@ -31,9 +18,16 @@ struct clause
 #undef TYPED
 #undef TYPE
 
+// Instantiate int_vec
+#define TYPE int
+#define TYPED(THING) int_ ## THING
+#include "vec.h"
+#undef TYPED
+#undef TYPE
+
 const char* out_path; // named pipe
-u64 nb_solvers; // number of solvers
-u64 redist; // redistribution_strategy
+u64 n_solvers; // number of solvers
+u64 redist_strat; // redistribution_strategy
 
 
 // Buffering.
@@ -44,16 +38,17 @@ FILE** importfiles;
 
 
 void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
-    redist = redistribution_strategy;
-    nb_solvers = num_solvers;
+    redist_strat = redistribution_strategy;
+    n_solvers = num_solvers;
     out_path = main_path;
     all_lits = int_vec_init(1024);
     clauses = clause_vec_init(128);
     importfiles = trusted_utils_malloc(sizeof(FILE*) * num_solvers);
 
-    for (size_t i = 0; i < nb_solvers; i++) {
+    for (size_t i = 0; i < n_solvers; i++) {
         char proof_path[512];
         snprintf(proof_path, 512, "%s/%lu/%lu.plrat_import", out_path, i, solver_id);
+        plrat_utils_log(proof_path);
         importfiles[i] = fopen(proof_path, "w");
         if (!out_path) trusted_utils_exit_eof();
     }
@@ -67,7 +62,7 @@ void plrat_importer_end() {
     for (size_t c = 0; c < clauses->size; c++){
         current_clause = clauses->data[c];
         current_clause_id = current_clause.id;
-        origin_index = current_clause_id % nb_solvers;
+        origin_index = current_clause_id % n_solvers;
         current_out = importfiles[origin_index];
         trusted_utils_write_ul(current_clause_id, current_out);
         trusted_utils_write_int(current_clause.nb_lits, current_out);
@@ -77,7 +72,7 @@ void plrat_importer_end() {
             current_out);
     }
 
-    for (size_t i = 0; i < nb_solvers; i++) {
+    for (size_t i = 0; i < n_solvers; i++) {
         fclose(importfiles[i]);
     }
     free(importfiles);   

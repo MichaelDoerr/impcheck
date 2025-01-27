@@ -1,5 +1,6 @@
 
 #include "trusted_utils.h"  // for u64, u8
+#include "clause.h"
 
 #define TYPE u8
 #define TYPED(THING) u8_ ## THING
@@ -21,6 +22,12 @@
 
 #define TYPE u64
 #define TYPED(THING) u64_ ## THING
+#include "vec.c"
+#undef TYPED
+#undef TYPE
+
+#define TYPE struct clause
+#define TYPED(THING) clause_ ## THING
 #include "vec.c"
 #undef TYPED
 #undef TYPE
