@@ -50,7 +50,7 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
         snprintf(proof_path, 512, "%s/%lu/%lu.plrat_import", out_path, i, solver_id);
         plrat_utils_log(proof_path);
         importfiles[i] = fopen(proof_path, "w");
-        if (!out_path) trusted_utils_exit_eof();
+        if (!(importfiles[i])) trusted_utils_exit_eof();
     }
 }
 

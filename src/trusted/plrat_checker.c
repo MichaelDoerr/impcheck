@@ -11,6 +11,8 @@
 #include "plrat_importer.h"
 #include <assert.h>
 
+#define UNUSED(x) (void)(x)
+
 // Instantiate int_vec
 #define TYPE int
 #define TYPED(THING) int_ ## THING
@@ -49,15 +51,20 @@ void read_hints(int nb_hints) {
     trusted_utils_read_uls(buf_hints->data, nb_hints, proof);
 }
 
-void pc_init(const char* formula_path, const char* proof_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
+void pc_init(const char* formula_path, const char* proofs_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
+    
+    char proof_path[512];
+    snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
+    
     proof = fopen(proof_path, "r");
     if (!proof) trusted_utils_exit_eof();
     formular = fopen(formula_path, "r");
     if (!formular) trusted_utils_exit_eof();
+    UNUSED(formula_path);
     buf_lits = int_vec_init(1 << 14);
     buf_hints = u64_vec_init(1 << 14);
     nb_solvers = num_solvers;
-    plrat_importer_init(proof_path, solver_id, num_solvers, redistribution_strategy);
+    plrat_importer_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
 }
 
 void pc_end() {

@@ -28,9 +28,6 @@ int main(int argc, char *argv[]) {
     formula_path, proofs_path, num_solvers, solver_id, redistribution_strategy);
     plrat_utils_log(output_path);
 
-    char proof_path[512];
-    snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
-
     pc_init(formula_path, proofs_path, solver_id, num_solvers, redistribution_strategy);
     int res = pc_run();
     fflush(stdout);
