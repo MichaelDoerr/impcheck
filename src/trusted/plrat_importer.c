@@ -37,6 +37,24 @@ FILE** importfiles;
 
 
 
+void plrat_utils_write_lrat_import_file(u64 clause_id, int* literals, int nb_literals, FILE* current_out) {    
+    
+    //fprintf(current_out, "%lu ", clause_id);
+    //fprintf(current_out, " ");
+    //fprintf(current_out, "n:%i", nb_literals);
+    //fprintf(current_out, " ");
+    //for (int i = 0; i < nb_literals; i++) {
+    //    fprintf(current_out, "%i ", literals[i]);
+    //}
+    //fprintf(current_out, "%i", 0);
+    //fprintf(current_out, "\n");
+
+    trusted_utils_write_ul(clause_id, current_out);
+    trusted_utils_write_int(nb_literals, current_out);
+    trusted_utils_write_ints(literals, nb_literals, current_out);
+
+}
+
 void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
     redist_strat = redistribution_strategy;
     n_solvers = num_solvers;
@@ -64,11 +82,10 @@ void plrat_importer_end() {
         current_clause_id = current_clause.id;
         origin_index = current_clause_id % n_solvers;
         current_out = importfiles[origin_index];
-        trusted_utils_write_ul(current_clause_id, current_out);
-        trusted_utils_write_int(current_clause.nb_lits, current_out);
-        trusted_utils_write_ints(
-            &(all_lits->data[current_clause.start]),
-            current_clause.nb_lits,
+        plrat_utils_write_lrat_import_file(
+            current_clause_id,
+            &(all_lits->data[current_clause.start]), 
+            current_clause.nb_lits, 
             current_out);
     }
 

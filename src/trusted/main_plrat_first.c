@@ -30,6 +30,7 @@ int main(int argc, char *argv[]) {
 
     pc_init(formula_path, proofs_path, solver_id, num_solvers, redistribution_strategy);
     int res = pc_run();
+    pc_end();
     fflush(stdout);
     return res;
 }

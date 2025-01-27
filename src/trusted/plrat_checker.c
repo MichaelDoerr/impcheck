@@ -68,6 +68,7 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
 }
 
 void pc_end() {
+    plrat_importer_end();
     free(buf_hints);
     free(buf_lits);
     fclose(formular);

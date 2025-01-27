@@ -179,6 +179,7 @@ void trusted_utils_write_lrat_import(u64 last_id, u64 clause_id, int* literals, 
     write_char_raw('i');
     write_char_raw(' ');
     write_ul(clause_id);
+    write_char_raw(' ');
     write_ints(literals, nb_literals);
     write_int(0);
     write_char_raw('\n');
