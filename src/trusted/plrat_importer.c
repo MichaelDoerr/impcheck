@@ -81,7 +81,8 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
             all_lits[i] = int_vec_init(1024);
             clauses[i] = clause_vec_init(1024);
         } else {
-            all_lits[i] = int_vec_init(1);
+            // Use a small placeholder for less edgecases
+            all_lits[i] = int_vec_init(1); 
             clauses[i] = clause_vec_init(1);
         }
         if (!(importfiles[i])) trusted_utils_exit_eof();
@@ -119,7 +120,6 @@ void plrat_importer_end() {
     for (size_t i = 0; i < n_solvers; i++) {
         int_vec_free(all_lits[i]);
         clause_vec_free(clauses[i]);
-
         free(all_lits[i]);
         free(clauses[i]);
         fclose(importfiles[i]);
