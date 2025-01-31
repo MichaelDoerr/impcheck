@@ -54,6 +54,7 @@ void trusted_utils_read_ints(int* data, u64 nb_ints, FILE* file);
 u64 trusted_utils_read_ul(FILE* file);
 void trusted_utils_read_uls(u64* data, u64 nb_uls, FILE* file);
 void trusted_utils_read_sig(u8* out_sig, FILE* file);
+void trusted_utils_skip_bytes(u64 nb_bytes, FILE* file);
 
 void trusted_utils_write_bool(bool b, FILE* file);
 void trusted_utils_write_char(char c, FILE* file);

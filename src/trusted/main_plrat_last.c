@@ -2,7 +2,7 @@
 #include <stdio.h>            // for fflush, stdout
 #include "trusted_utils.h"    // for trusted_utils_try_match_arg, trusted_ut...
 #include "plrat_utils.h"
-#include "plrat_checker.h"
+#include "plrat_finder.h"
 
 int main(int argc, char *argv[]) {
     // path/to/formula.cnf path/to/proofs/ <num-solvers> <solver-id> <redistribution-strategy>
@@ -20,6 +20,10 @@ int main(int argc, char *argv[]) {
     snprintf(output_path, 512, "-formula-path=%s -proofs-path=%s num-solvers=%lu -solver-id=%lu -redistribution-strategy=%lu",
     formula_path, proofs_path, num_solvers, solver_id, redistribution_strategy);
     plrat_utils_log(output_path);
+
+    plrat_finder_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
+    plrat_finder_run();
+    plrat_finder_end();
 
     return 0;
 }

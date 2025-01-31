@@ -133,6 +133,11 @@ void trusted_utils_read_sig(u8* out_sig, FILE* file) {
 #endif
 }
 
+void trusted_utils_skip_bytes(u64 nb_bytes, FILE* file) {
+    int res = fseek(file, nb_bytes, SEEK_CUR);
+    if (res != 0) trusted_utils_exit_eof();
+}
+
 #if IMPCHECK_PLRAT
 
 void trusted_utils_write_lrat_add(u64 id, int* literals, int nb_literals,

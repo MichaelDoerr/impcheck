@@ -11,6 +11,7 @@
 #include "plrat_checker.h"  // for trusted_utils_read_int, trusted_utils_log...
 #include "plrat_utils.h"
 #include "top_check.h"  // for top_check_commit_formula_sig, top_check_d...
+#include "plrat_importer.h"
 
 // Instantiate clause_vec
 #define TYPE struct clause
