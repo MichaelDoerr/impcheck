@@ -26,6 +26,11 @@ void TYPED(vec_reserve)(struct TYPED(vec)* vec, u64 new_cap) {
     if (vec->size > new_cap) vec->size = new_cap; // shrink
 }
 
+void TYPED(vec_resize)(struct TYPED(vec)* vec, u64 new_size) {
+    TYPED(vec_reserve)(vec, new_size);
+    vec->size = new_size; // grow
+}
+
 void TYPED(vec_push)(struct TYPED(vec)* vec, TYPE elem) {
     if (vec->size == vec->capacity) {
         u64 new_cap = vec->capacity*1.3;
