@@ -1,38 +1,40 @@
 
-#include <stdbool.h>        // for bool, true, false
-#include <stdio.h>          // for fclose, fflush_unlocked, fopen, snprintf
-#include <stdlib.h>         // for free
-#include <time.h>           // for clock, CLOCKS_PER_SEC, clock_t
-#include "top_check.h"      // for top_check_commit_formula_sig, top_check_d...
 #include "plrat_checker.h"  // for trusted_utils_read_int, trusted_utils_log...
+
+#include <assert.h>
+#include <stdbool.h>  // for bool, true, false
+#include <stdio.h>    // for fclose, fflush_unlocked, fopen, snprintf
+#include <stdlib.h>   // for free
+#include <time.h>     // for clock, CLOCKS_PER_SEC, clock_t
+
 #include "checker_interface.h"
 #include "hash.h"
-#include "plrat_utils.h"
 #include "plrat_importer.h"
-#include <assert.h>
+#include "plrat_utils.h"
+#include "top_check.h"  // for top_check_commit_formula_sig, top_check_d...
 
 #define UNUSED(x) (void)(x)
 
 // Instantiate int_vec
 #define TYPE int
-#define TYPED(THING) int_ ## THING
+#define TYPED(THING) int_##THING
 #include "vec.h"
 #undef TYPED
 #undef TYPE
 
 // Instantiate u64_vec
 #define TYPE u64
-#define TYPED(THING) u64_ ## THING
+#define TYPED(THING) u64_##THING
 #include "vec.h"
 #undef TYPED
 #undef TYPE
 
-FILE* proof; // named pipe
-FILE* formular; // named pipe
-int nb_vars; // # variables in formula
-signature formula_sig; // formula signature
-u64 nb_solvers; // number of solvers
-u64 redist; // redistribution_strategy
+FILE* proof;            // named pipe
+FILE* formular;         // named pipe
+int nb_vars;            // # variables in formula
+signature formula_sig;  // formula signature
+u64 nb_solvers;         // number of solvers
+u64 redist;             // redistribution_strategy
 
 bool do_logging = true;
 
@@ -52,10 +54,9 @@ void read_hints(int nb_hints) {
 }
 
 void pc_init(const char* formula_path, const char* proofs_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
-    
     char proof_path[512];
     snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
-    
+
     proof = fopen(proof_path, "r");
     if (!proof) trusted_utils_exit_eof();
     formular = fopen(formula_path, "r");
@@ -82,7 +83,7 @@ int pc_run() {
     char c = '\0';
 
     c = trusted_utils_read_char(proof);
-    if(c == TRUSTED_CHK_INIT) {
+    if (c == TRUSTED_CHK_INIT) {
         nb_vars = trusted_utils_read_int(proof);
         top_check_init(nb_vars, false, false);
     } else {
@@ -91,20 +92,24 @@ int pc_run() {
     }
 
     c = trusted_utils_read_char(proof);
-    if (c == TRUSTED_CHK_LOAD) {    
+    while (c == TRUSTED_CHK_LOAD) {
+        if (c == TRUSTED_CHK_LOAD) {
             const int nb_lits = trusted_utils_read_int(proof);
             read_literals(nb_lits);
             for (int i = 0; i < nb_lits; i++) top_check_load(buf_lits->data[i]);
-    } else {
-        trusted_utils_log_err("Invalid LOAD");
-        reported_error = true;
+        } else {
+            trusted_utils_log_err("Invalid LOAD");
+            reported_error = true;
+        }
+        c = trusted_utils_read_char(proof);
     }
 
-    c = trusted_utils_read_char(proof);
-    if(c == TRUSTED_CHK_END_LOAD) {
+    if (c == TRUSTED_CHK_END_LOAD) {
         plrat_utils_log("Formular Loaded");
     } else {
-        plrat_utils_log_err("Invalid END_LOAD");
+        char err_str[512];
+        snprintf(err_str, 512, "Invalid END_LOAD c:%c", c);
+        plrat_utils_log_err(err_str);
         reported_error = true;
     }
 
@@ -119,7 +124,7 @@ int pc_run() {
             read_hints(nb_hints);
             // forward to checker
             top_check_produce(id, buf_lits->data, nb_lits,
-                buf_hints->data, nb_hints);
+                              buf_hints->data, nb_hints);
             nb_produced++;
 
         } else if (c == TRUSTED_CHK_CLS_IMPORT) {
@@ -143,7 +148,6 @@ int pc_run() {
             nb_deleted += nb_hints;
 
         } else if (c == TRUSTED_CHK_TERMINATE) {
-
             break;
 
         } else {
@@ -158,7 +162,7 @@ int pc_run() {
             }
         }
     }
-    float elapsed = (float) (clock() - start) / CLOCKS_PER_SEC;
+    float elapsed = (float)(clock() - start) / CLOCKS_PER_SEC;
     snprintf(trusted_utils_msgstr, 512, "cpu:%.3f prod:%lu imp:%lu del:%lu n_s:%lu", elapsed, nb_produced, nb_imported, nb_deleted, nb_solvers);
     trusted_utils_log(trusted_utils_msgstr);
 

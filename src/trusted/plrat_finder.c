@@ -84,18 +84,22 @@ void skip_proof_header() {
     }
 
     c = trusted_utils_read_char(my_proof);
-    if (c == TRUSTED_CHK_LOAD) {
-        const int nb_lits = trusted_utils_read_int(my_proof);
-        trusted_utils_skip_bytes(nb_lits * sizeof(int), my_proof);
-    } else {
-        trusted_utils_log_err("Invalid LOAD");
+    while (c == TRUSTED_CHK_LOAD) {
+        if (c == TRUSTED_CHK_LOAD) {
+            const int nb_lits = trusted_utils_read_int(my_proof);
+            trusted_utils_skip_bytes(nb_lits * sizeof(int), my_proof);
+        } else {
+            trusted_utils_log_err("Invalid LOAD");
+        }
+        c = trusted_utils_read_char(my_proof);
     }
 
-    c = trusted_utils_read_char(my_proof);
     if (c == TRUSTED_CHK_END_LOAD) {
         plrat_utils_log("Header Skipped");
     } else {
-        plrat_utils_log_err("Invalid END_LOAD");
+        char err_str[512];
+        snprintf(err_str, 512, "Invalid END_LOAD c:%c", c);
+        plrat_utils_log_err(err_str);
     }
 }
 
@@ -194,31 +198,32 @@ void plrat_finder_run() {
                 if (!compare_lits(current_literals->data, all_lits[i]->data, current_literals->size, all_lits[i]->size)) {
                     char err_str[512];
                     snprintf(err_str, 512, "literals do not match \nID:%lu index_to_load:%lu i:%lu", current_ID, index_to_load, i);
-                    plrat_utils_log_err("");
+                    plrat_utils_log_err(err_str);
                     exit(1);
                 }
+                load_clause_if_available(i);
             }
         }
         // find clause id in proof
-        if (local_id == 0) plrat_utils_log("search");
+        // if (local_id == 0) plrat_utils_log("search");
         while (true) {
             int c = trusted_utils_read_char(my_proof);
-            if (local_id == 0) {
-                char msg[512];
-                snprintf(msg, 512, "current_ID=%lu processIndex=%lu c=%c", current_ID, local_id, c);
-                plrat_utils_log(msg);
-            }
+            // if (local_id == 0) {
+            //     char msg[512];
+            //     snprintf(msg, 512, "current_ID=%lu processIndex=%lu c=%c", current_ID, local_id, c);
+            //     plrat_utils_log(msg);
+            // }
             if (c == TRUSTED_CHK_CLS_PRODUCE) {
                 // parse
                 u64 id = trusted_utils_read_ul(my_proof);
                 const int nb_lits = trusted_utils_read_int(my_proof);
                 int nb_hints;
                 // skip line
-                if (local_id == 0) {
-                    char msgr[512];
-                    snprintf(msgr, 512, "A %lu n:%i", id, nb_hints);
-                    plrat_utils_log(msgr);
-                }
+                // if (local_id == 0) {
+                //    char msgr[512];
+                //    snprintf(msgr, 512, "A %lu n:%i", id, nb_hints);
+                //    plrat_utils_log(msgr);
+                //}
                 if (id < current_ID) {
                     trusted_utils_skip_bytes(nb_lits * sizeof(int), my_proof);
                     nb_hints = trusted_utils_read_int(my_proof);
@@ -230,14 +235,20 @@ void plrat_finder_run() {
                     nb_hints = trusted_utils_read_int(my_proof);
                     trusted_utils_skip_bytes(nb_hints * sizeof(u64), my_proof);
                     if (compare_lits(current_literals->data, proof_lits->data, current_literals->size, nb_lits)) {
-                        plrat_utils_log("found clause, nice");
+                        // plrat_utils_log("found clause, nice");
                         break;
                     } else {
                         char err_str[512];
                         snprintf(err_str, 512, "literals do not match in proof \nID:%lu importer_index:%lu", current_ID, index_to_load);
-                        plrat_utils_log_err("");
+                        plrat_utils_log_err(err_str);
                         exit(1);
                     }
+                }
+                if (id > current_ID) {
+                    char err_str[512];
+                    snprintf(err_str, 512, "clause not found in proof \nID:%lu importer_index:%lu", current_ID, index_to_load);
+                    plrat_utils_log_err(err_str);
+                    exit(1);
                 }
 
             } else if (c == TRUSTED_CHK_CLS_IMPORT) {
@@ -267,4 +278,7 @@ void plrat_finder_run() {
             }
         }
     }
+    char msg[512];
+    snprintf(msg, 512, "Done local_id=%lu", local_id);
+    plrat_utils_log(msg);
 }
