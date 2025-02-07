@@ -5,6 +5,7 @@
 #include "trusted_utils.h"  // for u64, u8
 
 void lrat_check_init(int nb_vars, bool opt_check_model, bool opt_lenient);
+void lrat_check_end();
 bool lrat_check_load(int lit);
 bool lrat_check_end_load(u8** out_sig);
 bool lrat_check_add_axiomatic_clause(u64 id, const int* lits, int nb_lits);

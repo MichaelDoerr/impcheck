@@ -111,6 +111,7 @@ void tp_init(const char* filename, FILE* out) {
 }
 
 void tp_end() {
+    siphash_free();
     free(data);
 }
 

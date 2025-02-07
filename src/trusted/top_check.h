@@ -6,6 +6,7 @@
 // and returns certificates for (un)satisfiability.
 
 void top_check_init(int nb_vars, bool check_model, bool lenient);
+void top_check_end();
 void top_check_commit_formula_sig(const u8* f_sig);
 void top_check_load(int lit);
 bool top_check_end_load();

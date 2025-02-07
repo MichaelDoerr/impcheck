@@ -121,8 +121,6 @@ void plrat_importer_end() {
     for (size_t i = 0; i < n_solvers; i++) {
         int_vec_free(all_lits[i]);
         clause_vec_free(clauses[i]);
-        free(all_lits[i]);
-        free(clauses[i]);
         fclose(importfiles[i]);
     }
     free(importfiles);

@@ -70,8 +70,9 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
 
 void pc_end() {
     plrat_importer_end();
-    free(buf_hints);
-    free(buf_lits);
+    top_check_end();
+    int_vec_free(buf_lits);
+    u64_vec_free(buf_hints);
     fclose(formular);
     fclose(proof);
 }

@@ -70,6 +70,7 @@ void tc_init(const char* fifo_in, const char* fifo_out, u64 num_solvers) {
 }
 
 void tc_end() {
+    top_check_end();
     free(buf_hints);
     free(buf_lits);
     fclose(output);

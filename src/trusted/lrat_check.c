@@ -179,6 +179,13 @@ void lrat_check_init(int nb_vars, bool opt_check_model, bool opt_lenient) {
     lenient = opt_lenient;
 }
 
+void lrat_check_end() {
+    hash_table_free(clause_table);
+    int_vec_free(clause_to_add);
+    i8_vec_free(var_values);
+    int_vec_free(assigned_units);
+}
+
 bool lrat_check_load(int lit) {
     if (lit == 0) {
         if (!lrat_check_add_axiomatic_clause(id_to_add, clause_to_add->data, clause_to_add->size)) {

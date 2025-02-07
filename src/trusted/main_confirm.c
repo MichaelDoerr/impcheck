@@ -65,5 +65,7 @@ int main(int argc, char *argv[]) {
         printf("s VERIFIED SATISFIABLE\n");
     if (result == 20)
         printf("s VERIFIED UNSATISFIABLE\n");
+
+    tp_end();
     return 0;
 }

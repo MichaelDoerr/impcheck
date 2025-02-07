@@ -19,5 +19,6 @@ int main(int argc, char *argv[]) {
     u8* sig;
     bool ok = tp_parse(&sig);
     if (!ok) abort();
+    tp_end();
     return 0;
 }
