@@ -239,14 +239,14 @@ void plrat_finder_run() {
                         break;
                     } else {
                         char err_str[512];
-                        snprintf(err_str, 512, "literals do not match in proof \nID:%lu importer_index:%lu", current_ID, index_to_load);
+                        snprintf(err_str, 512, "literals do not match in proof my rank:%lu ID:%lu importer_index:%lu", local_id, current_ID, index_to_load);
                         plrat_utils_log_err(err_str);
                         exit(1);
                     }
                 }
                 if (id > current_ID) {
                     char err_str[512];
-                    snprintf(err_str, 512, "clause not found in proof \nID:%lu importer_index:%lu", current_ID, index_to_load);
+                    snprintf(err_str, 512, "clause not found in proof my rank:%lu ID:%lu importer_index:%lu", local_id, current_ID, index_to_load);
                     plrat_utils_log_err(err_str);
                     exit(1);
                 }

@@ -134,7 +134,7 @@ bool hash_table_insert(struct hash_table* ht, u64 key, void* val) {
             return false; // sth went very wrong during realloc
     }
 
-    u64 idx;
+    u64 idx = 0;
     if (find_entry(ht, key, &idx))
         return false; // found an element with this key!
     if (!cell_empty(&ht->data[idx]))

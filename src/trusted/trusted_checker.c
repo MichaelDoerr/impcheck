@@ -167,7 +167,7 @@ int tc_run(bool check_model, bool lenient) {
             trusted_utils_write_lrat_load(TRUSTED_CHK_LOAD, buf_lits->data, nb_lits);
             
             char o[512];
-            snprintf(o, 512, "HEEEY %i", nb_lits);
+            snprintf(o, 512, "LOAD nb_lits %i", nb_lits);
             trusted_utils_log(o);
 #endif
 

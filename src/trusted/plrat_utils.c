@@ -1,12 +1,11 @@
 #include "plrat_utils.h"
 
 #include <assert.h>
+#include <unistd.h>  // getpid
 
 #include "hash.h"
-#include "trusted_utils.h"
 #include "lrat_check.h"
-
-#include <unistd.h> // getpid
+#include "trusted_utils.h"
 
 u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers) {
     u64 local_offset = *offset;
@@ -21,9 +20,9 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
     u64 new_offset = 1 + max_hint_id - old_id;
 
     // offsets have to be a multiple of nb_solvers
-    u64 temp_rank = new_offset % nb_solvers; 
-    // (correct the rank) and do not add 4 if temp_rank is 0
-    new_offset += (nb_solvers - temp_rank) % nb_solvers; 
+    u64 temp_rank = new_offset % nb_solvers;
+    // (correct the rank) and do not add nb_solvers if temp_rank is 0
+    new_offset += (nb_solvers - temp_rank) % nb_solvers;
     
     assert((new_offset % nb_solvers) == 0);
 

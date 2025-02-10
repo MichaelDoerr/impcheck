@@ -31,9 +31,10 @@ void TYPED(vec_resize)(struct TYPED(vec)* vec, u64 new_size) {
 }
 
 void TYPED(vec_push)(struct TYPED(vec)* vec, TYPE elem) {
-    if (vec->size == vec->capacity) {
-        u64 new_cap = vec->capacity*1.3;
-        if (new_cap < vec->capacity+1) new_cap = vec->capacity+1;
+    u64 current_cap = vec->capacity;
+    if (vec->size == current_cap) {
+        u64 new_cap = current_cap*1.3;
+        if (new_cap < current_cap+1) new_cap = current_cap+1;
         TYPED(vec_reserve)(vec, new_cap);
     }
     vec->data[vec->size++] = elem;
