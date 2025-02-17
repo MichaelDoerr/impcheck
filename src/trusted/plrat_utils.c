@@ -79,3 +79,11 @@ void plrat_utils_log(const char* msg) {
 void plrat_utils_log_err(const char* msg) {
     printf("p [PLRAT_CHECKER %i] [ERROR] %s\n", getpid(), msg);
 }
+
+bool plrat_utils_compare_lits(int* lits1, int* lits2, int nb_lits1, int nb_lits2) {
+    if (nb_lits1 != nb_lits2) return false;
+    for (int i = 0; i < nb_lits1; i++) {
+        if (lits1[i] != lits2[i]) return false;
+    }
+    return true;
+}
