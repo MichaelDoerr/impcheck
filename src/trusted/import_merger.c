@@ -10,7 +10,7 @@ struct int_vec** _im_all_lits;
 FILE** _im_import_files;
 // Buffering.
 
-u64* _im_current_id;
+u64* _im_current_id; // is -1 if no clause is available (end of files)
 struct int_vec* _im_current_literals;
 
 void read_literals_index(int index, int nb_lits) {
