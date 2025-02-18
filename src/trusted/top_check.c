@@ -52,6 +52,10 @@ bool top_check_end_load() {
     return valid;
 }
 
+u64 top_check_get_nb_loaded_clauses() {
+    return lrat_check_get_nb_loaded_clauses();
+}
+
 bool top_check_produce(unsigned long id, const int* literals, int nb_literals,
     const unsigned long* hints, int nb_hints) {
     

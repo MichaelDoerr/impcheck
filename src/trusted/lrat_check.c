@@ -41,6 +41,9 @@ struct int_vec* clause_to_add;
 bool done_loading = false;
 bool unsat_proven = false;
 
+u64 lrat_check_get_nb_loaded_clauses(){
+    return nb_loaded_clauses;
+}
 
 int* clause_init(const int* data, int nb_lits) {
     int* cls = trusted_utils_calloc(nb_lits+1, sizeof(int));

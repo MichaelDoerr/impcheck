@@ -7,9 +7,9 @@
 #include "lrat_check.h"
 #include "trusted_utils.h"
 
-u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers) {
+u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers, u64 solver_id_offset) {
     u64 local_offset = *offset;
-    u64 new_id = old_id + local_offset;
+    u64 new_id = old_id + local_offset + solver_id_offset;
     u64 max_hint_id = plrat_utils_add_offset(id_offsets, hints, nb_hints);
 
     if (new_id > max_hint_id) {

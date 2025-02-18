@@ -29,6 +29,8 @@ FILE* output; // named pipe
 int nb_vars; // # variables in formula
 signature formula_sig; // formula signature
 u64 nb_solvers; // number of solvers
+u64 solver_id; 
+u64 solver_offset = 0;
 
 bool do_logging = true;
 
@@ -59,7 +61,7 @@ void read_hints(int nb_hints) {
     trusted_utils_read_uls(buf_hints->data, nb_hints, input);
 }
 
-void tc_init(const char* fifo_in, const char* fifo_out, u64 num_solvers) {
+void tc_init(const char* fifo_in, const char* fifo_out, u64 num_solvers, u64 global_solver_id) {
     input = fopen(fifo_in, "r");
     if (!input) trusted_utils_exit_eof();
     output = fopen(fifo_out, "w");
@@ -67,6 +69,7 @@ void tc_init(const char* fifo_in, const char* fifo_out, u64 num_solvers) {
     buf_lits = int_vec_init(1 << 14);
     buf_hints = u64_vec_init(1 << 14);
     nb_solvers = num_solvers;
+    solver_id = global_solver_id;
 }
 
 void tc_end() {
@@ -106,7 +109,7 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
 #if IMPCHECK_PLRAT
             id = plrat_utils_get_next_valid_id(id, &offset, 
-            id_offsets, buf_hints->data, nb_hints, nb_solvers);
+            id_offsets, buf_hints->data, nb_hints, nb_solvers, solver_offset);
 
             assert(last_id < id);
             last_id = id;
@@ -167,7 +170,7 @@ int tc_run(bool check_model, bool lenient) {
             trusted_utils_write_lrat_load(TRUSTED_CHK_LOAD, buf_lits->data, nb_lits);
             
             char o[512];
-            snprintf(o, 512, "LOAD nb_lits %i", nb_lits);
+            snprintf(o, 512, "LOAD nb_lits:%i", nb_lits);
             trusted_utils_log(o);
 #endif
 
@@ -185,6 +188,12 @@ int tc_run(bool check_model, bool lenient) {
 
             say_with_flush(top_check_end_load());
 #if IMPCHECK_PLRAT
+            
+            u64 baseID = top_check_get_nb_loaded_clauses() + solver_id;
+            solver_offset = nb_solvers + solver_id - (baseID % nb_solvers);
+            char log_str[512];
+            snprintf(log_str, 512, "Formular Loaded nb_clauses:%lu", baseID - 1);
+            plrat_utils_log(log_str);
             trusted_utils_write_end_load(TRUSTED_CHK_END_LOAD);
 #endif
         } else if (c == TRUSTED_CHK_VALIDATE_UNSAT) {

@@ -10,6 +10,7 @@ void top_check_end();
 void top_check_commit_formula_sig(const u8* f_sig);
 void top_check_load(int lit);
 bool top_check_end_load();
+u64 top_check_get_nb_loaded_clauses();
 void top_check_compute_clause_signature(u64 id, const int* lits, int nb_lits, u8* out);
 bool top_check_produce(unsigned long id, const int* literals, int nb_literals,
     const unsigned long* hints, int nb_hints);

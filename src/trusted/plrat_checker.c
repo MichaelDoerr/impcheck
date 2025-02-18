@@ -35,6 +35,7 @@ int nb_vars;            // # variables in formula
 signature formula_sig;  // formula signature
 u64 nb_solvers;         // number of solvers
 u64 redist;             // redistribution_strategy
+u64 pc_nb_loaded_clauses;  // number of loaded clauses
 
 bool do_logging = true;
 
@@ -106,7 +107,10 @@ int pc_run() {
     }
 
     if (c == TRUSTED_CHK_END_LOAD) {
-        plrat_utils_log("Formular Loaded");
+        pc_nb_loaded_clauses = top_check_get_nb_loaded_clauses();
+        char log_str[512];
+        snprintf(log_str, 512, "Formular Loaded nb_clauses:%lu", pc_nb_loaded_clauses);
+        plrat_utils_log(log_str);
     } else {
         char err_str[512];
         snprintf(err_str, 512, "Invalid END_LOAD c:%c", c);
