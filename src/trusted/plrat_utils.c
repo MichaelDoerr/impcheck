@@ -7,17 +7,40 @@
 #include "lrat_check.h"
 #include "trusted_utils.h"
 
+FILE* debug_file;
+int checker_id;
+
+void plrat_utils_init_debug(int checker_id, const char* location) {
+    checker_id = checker_id;
+    char debug_file_name[512];
+    snprintf(debug_file_name, 512, "%s/debug_%i.log", location, checker_id);
+    debug_file = fopen(debug_file_name, "w");
+    assert(debug_file != NULL);
+}
+
+void plrat_utils_end_debug() {
+    fclose(debug_file);
+}
+
+// log old id and new id
+void plrat_utils_debug(char type, const u64 old_id, const u64 new_id) {
+    fprintf(debug_file, "%c %lu %lu %lu %lu\n", type, old_id, old_id%6, new_id, new_id%6);
+}
+
 u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers, u64 solver_offset) {
     u64 local_offset = *offset + solver_offset;
     u64 new_id = old_id + local_offset;
     u64 max_hint_id = plrat_utils_add_offset(id_offsets, hints, nb_hints);
 
     if (new_id > max_hint_id) {
+        
+        plrat_utils_debug('a', old_id, new_id);
         hash_table_insert(id_offsets, old_id, (void*)local_offset);
         return new_id;  // no new offset needed
     }
 
     u64 new_offset = 1 + max_hint_id - old_id;
+    assert(new_offset + old_id > max_hint_id);
 
     // offsets have to be a multiple of nb_solvers
     u64 temp_rank = (new_offset % nb_solvers);
@@ -26,14 +49,21 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
     
     
     assert((new_offset % nb_solvers) ==  0);
-
     hash_table_insert(id_offsets, old_id, (void*)(new_offset + solver_offset));
-    *offset = new_offset;
+
     new_id = old_id + new_offset + solver_offset;
+    plrat_utils_debug('b', old_id, new_id);
 
     char msgstr2[512] = "";
-    snprintf(msgstr2, 512, "bigger offset! new_id:%lu jump_offset:%lu new_offset:%lu htsize:%lu", old_id + new_offset, new_offset - local_offset, new_offset, id_offsets->capacity);
+    snprintf(msgstr2, 512, "bigger offset! new_id:%lu jump_offset:%lu new_offset:%lu htsize:%lu", new_id, new_offset - *offset, new_offset, id_offsets->capacity);
     trusted_utils_log(msgstr2);
+
+    assert(new_offset > *offset);
+    *offset = new_offset;
+    
+    assert(new_id > max_hint_id);
+    assert((new_id % nb_solvers) ==  ((old_id + solver_offset) % nb_solvers));
+    assert(*offset % nb_solvers == 0);
 
     return new_id;
 }
@@ -49,10 +79,20 @@ u64 plrat_utils_add_offset(struct hash_table* id_offsets, u64* hints, int nb_hin
         void* current_offset = hash_table_find(id_offsets, hint);
         //if (current_offset != NULL) {
             hint += (u64)current_offset;
+            assert(hint > 0);
+            assert((long)current_offset >= 0);
+            assert(hint >= hints[i]);
+            plrat_utils_debug('h', hints[i], hint);
             hints[i] = hint;
         //}
         max_hint_id = (max_hint_id < hint) ? hint : max_hint_id;  // find largest hint id
+
     }
+
+    for (int i = 0; i < nb_hints; ++i) {
+        assert(max_hint_id >= hints[i]);
+    }
+
     return max_hint_id;
 }
 

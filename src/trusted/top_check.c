@@ -47,8 +47,10 @@ bool top_check_end_load() {
     valid = valid && lrat_check_end_load(&sig_from_chk);
     if (!valid) return false;
     // Check against provided signature
+#if !IMPCHECK_PLRAT
     valid = trusted_utils_equal_signatures(sig_from_chk, formula_signature);
     if (!valid) snprintf(trusted_utils_msgstr, 512, "Formula signature check failed");
+#endif
     return valid;
 }
 

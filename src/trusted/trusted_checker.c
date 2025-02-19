@@ -70,6 +70,8 @@ void tc_init(const char* fifo_in, const char* fifo_out, u64 num_solvers, u64 glo
     buf_hints = u64_vec_init(1 << 14);
     nb_solvers = num_solvers;
     solver_id = global_solver_id;
+    
+    plrat_utils_init_debug(global_solver_id, "./");
 }
 
 void tc_end() {
@@ -78,6 +80,7 @@ void tc_end() {
     free(buf_lits);
     fclose(output);
     fclose(input);
+    plrat_utils_end_debug();
 }
 
 int tc_run(bool check_model, bool lenient) {
@@ -196,7 +199,7 @@ int tc_run(bool check_model, bool lenient) {
             plrat_utils_log(log_str);
 
             
-            solver_offset = (num_original_clauses % nb_solvers);
+            solver_offset = nb_solvers - (num_original_clauses % nb_solvers);
             
             snprintf(log_str, 512, "solver_offset:%lu", solver_offset);
             plrat_utils_log(log_str);

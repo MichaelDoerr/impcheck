@@ -3,6 +3,10 @@
 #include "hash.h"
 #include "trusted_utils.h"
 
+void plrat_utils_init_debug(int checker_id, const char* location);
+
+void plrat_utils_end_debug();
+
 // return largest hint id + offset.  Mutate hints
 u64 plrat_utils_add_offset(struct hash_table* id_offsets, u64* hints, int nb_hints); 
 
