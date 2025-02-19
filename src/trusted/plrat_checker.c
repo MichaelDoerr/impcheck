@@ -107,9 +107,8 @@ int pc_run() {
     }
 
     if (c == TRUSTED_CHK_END_LOAD) {
-        pc_nb_loaded_clauses = top_check_get_nb_loaded_clauses();
         char log_str[512];
-        snprintf(log_str, 512, "Formular Loaded nb_clauses:%lu", pc_nb_loaded_clauses);
+        snprintf(log_str, 512, "Formular Loaded");
         plrat_utils_log(log_str);
     } else {
         char err_str[512];

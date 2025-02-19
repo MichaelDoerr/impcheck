@@ -189,10 +189,16 @@ int tc_run(bool check_model, bool lenient) {
             say_with_flush(top_check_end_load());
 #if IMPCHECK_PLRAT
             
-            u64 baseID = top_check_get_nb_loaded_clauses() + solver_id;
-            solver_offset = nb_solvers + solver_id - (baseID % nb_solvers);
+            u64 num_original_clauses = top_check_get_nb_loaded_clauses();
+
             char log_str[512];
-            snprintf(log_str, 512, "Formular Loaded nb_clauses:%lu", baseID - 1);
+            snprintf(log_str, 512, "Formular Loaded nb_clauses:%lu", num_original_clauses);
+            plrat_utils_log(log_str);
+
+            
+            solver_offset = (num_original_clauses % nb_solvers);
+            
+            snprintf(log_str, 512, "solver_offset:%lu", solver_offset);
             plrat_utils_log(log_str);
             trusted_utils_write_end_load(TRUSTED_CHK_END_LOAD);
 #endif
