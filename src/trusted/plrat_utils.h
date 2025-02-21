@@ -3,7 +3,7 @@
 #include "hash.h"
 #include "trusted_utils.h"
 
-void plrat_utils_init_debug(int checker_id, const char* location);
+void plrat_utils_init_debug(int checker_id, int num_s,  const char* location);
 
 void plrat_utils_end_debug();
 

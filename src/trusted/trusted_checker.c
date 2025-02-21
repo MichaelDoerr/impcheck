@@ -71,7 +71,7 @@ void tc_init(const char* fifo_in, const char* fifo_out, u64 num_solvers, u64 glo
     nb_solvers = num_solvers;
     solver_id = global_solver_id;
     
-    plrat_utils_init_debug(global_solver_id, "./");
+    plrat_utils_init_debug(global_solver_id,nb_solvers, "./");
 }
 
 void tc_end() {
@@ -119,9 +119,11 @@ int tc_run(bool check_model, bool lenient) {
             trusted_utils_write_lrat_add(id, 
                 buf_lits->data, nb_lits,
                 buf_hints->data, nb_hints);
+            id -= solver_offset;
 #endif
             if (share) {
                 // compute signature if desired
+
                 top_check_compute_clause_signature(id, buf_lits->data, nb_lits, buf_sig);
 #if IMPCHECK_PLRAT
                 trusted_utils_write_ul(id, output);
@@ -136,16 +138,19 @@ int tc_run(bool check_model, bool lenient) {
         } else if (c == TRUSTED_CHK_CLS_IMPORT) {
 
             // parse
-            const u64 id = trusted_utils_read_ul(input);
+            u64 id = trusted_utils_read_ul(input);
             const int nb_lits = trusted_utils_read_int(input);
             read_literals(nb_lits);
             trusted_utils_read_sig(buf_sig, input);
+
             // forward to checker
             bool res = top_check_import(id, buf_lits->data, nb_lits, buf_sig);
             // respond
             say(res);
             nb_imported++;
 #if IMPCHECK_PLRAT
+            hash_table_insert(id_offsets, id, (void*)solver_offset);
+            id += solver_offset;
             trusted_utils_write_lrat_import(last_id, id, buf_lits->data, nb_lits);
 #endif
 
@@ -199,7 +204,7 @@ int tc_run(bool check_model, bool lenient) {
             plrat_utils_log(log_str);
 
             
-            solver_offset = nb_solvers - (num_original_clauses % nb_solvers);
+            solver_offset = (nb_solvers - (num_original_clauses % nb_solvers)) % nb_solvers;
             
             snprintf(log_str, 512, "solver_offset:%lu", solver_offset);
             plrat_utils_log(log_str);

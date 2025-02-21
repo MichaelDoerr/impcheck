@@ -9,9 +9,11 @@
 
 FILE* debug_file;
 int checker_id;
+int ns;
 
-void plrat_utils_init_debug(int checker_id, const char* location) {
+void plrat_utils_init_debug(int checker_id, int num_s,  const char* location) {
     checker_id = checker_id;
+    ns = num_s;
     char debug_file_name[512];
     snprintf(debug_file_name, 512, "%s/debug_%i.log", location, checker_id);
     debug_file = fopen(debug_file_name, "w");
@@ -24,7 +26,7 @@ void plrat_utils_end_debug() {
 
 // log old id and new id
 void plrat_utils_debug(char type, const u64 old_id, const u64 new_id) {
-    fprintf(debug_file, "%c %lu %lu %lu %lu\n", type, old_id, old_id%6, new_id, new_id%6);
+    fprintf(debug_file, "%c %lu %lu %lu %lu\n", type, old_id, old_id%ns, new_id, new_id%ns);
 }
 
 u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers, u64 solver_offset) {
@@ -34,7 +36,7 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
 
     if (new_id > max_hint_id) {
         
-        plrat_utils_debug('a', old_id, new_id);
+        //plrat_utils_debug('a', old_id, new_id);
         hash_table_insert(id_offsets, old_id, (void*)local_offset);
         return new_id;  // no new offset needed
     }
@@ -52,7 +54,7 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
     hash_table_insert(id_offsets, old_id, (void*)(new_offset + solver_offset));
 
     new_id = old_id + new_offset + solver_offset;
-    plrat_utils_debug('b', old_id, new_id);
+    //plrat_utils_debug('b', old_id, new_id);
 
     char msgstr2[512] = "";
     snprintf(msgstr2, 512, "bigger offset! new_id:%lu jump_offset:%lu new_offset:%lu htsize:%lu", new_id, new_offset - *offset, new_offset, id_offsets->capacity);
@@ -82,7 +84,7 @@ u64 plrat_utils_add_offset(struct hash_table* id_offsets, u64* hints, int nb_hin
             assert(hint > 0);
             assert((long)current_offset >= 0);
             assert(hint >= hints[i]);
-            plrat_utils_debug('h', hints[i], hint);
+            //plrat_utils_debug('h', hints[i], hint);
             hints[i] = hint;
         //}
         max_hint_id = (max_hint_id < hint) ? hint : max_hint_id;  // find largest hint id
@@ -103,8 +105,11 @@ void plrat_utils_translate_and_delete(struct hash_table* id_offsets, u64* hints,
     for (int i = 0; i < nb_hints; ++i) {
         u64 original_id = hints[i];                                       // temp save id
         void* current_offset = hash_table_find(id_offsets, original_id);  // translate id
+        //plrat_utils_debug('d', original_id, (u64)current_offset);
         if (current_offset != NULL) {
             hints[i] = original_id + (u64)current_offset;
+            
+            //plrat_utils_debug('D', original_id, hints[i]);
             hash_table_delete(id_offsets, original_id);  // delete id
         }
     }
