@@ -29,8 +29,8 @@ void plrat_utils_debug(char type, const u64 old_id, const u64 new_id) {
     fprintf(debug_file, "%c %lu %lu %lu %lu\n", type, old_id, old_id%ns, new_id, new_id%ns);
 }
 
-u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers, u64 solver_offset) {
-    u64 local_offset = *offset + solver_offset;
+u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_table* id_offsets, u64* hints, int nb_hints, u64 nb_solvers, u64 solver_modulo_remainder) {
+    u64 local_offset = *offset + solver_modulo_remainder;
     u64 new_id = old_id + local_offset;
     u64 max_hint_id = plrat_utils_add_offset(id_offsets, hints, nb_hints);
 
@@ -51,9 +51,9 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
     
     
     assert((new_offset % nb_solvers) ==  0);
-    hash_table_insert(id_offsets, old_id, (void*)(new_offset + solver_offset));
+    hash_table_insert(id_offsets, old_id, (void*)(new_offset + solver_modulo_remainder));
 
-    new_id = old_id + new_offset + solver_offset;
+    new_id = old_id + new_offset + solver_modulo_remainder;
     //plrat_utils_debug('b', old_id, new_id);
 
     char msgstr2[512] = "";
@@ -64,7 +64,7 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
     *offset = new_offset;
     
     assert(new_id > max_hint_id);
-    assert((new_id % nb_solvers) ==  ((old_id + solver_offset) % nb_solvers));
+    assert((new_id % nb_solvers) ==  ((old_id + solver_modulo_remainder) % nb_solvers));
     assert(*offset % nb_solvers == 0);
 
     return new_id;
@@ -129,9 +129,26 @@ void plrat_utils_log_err(const char* msg) {
 }
 
 bool plrat_utils_compare_lits(int* lits1, int* lits2, int nb_lits1, int nb_lits2) {
-    if (nb_lits1 != nb_lits2) return false;
+    if (MALLOB_UNLIKELY(nb_lits1 != nb_lits2)) return false;
     for (int i = 0; i < nb_lits1; i++) {
-        if (lits1[i] != lits2[i]) return false;
+        if (MALLOB_UNLIKELY(lits1[i] != lits2[i])) return false;
     }
     return true;
+}
+
+void plrat_utils_rank_to_2d(u64 rank, u64 n, u64* x, u64* y) {
+    *x = rank % n;
+    *y = rank / n;
+}
+
+u64 plrat_utils_2d_to_rank(u64 x, u64 y, u64 n) {
+    return y * n + x;
+}
+
+u64 plrat_utils_rank_to_x(u64 rank, u64 n) {
+    return rank % n;
+}
+
+u64 plrat_utils_rank_to_y(u64 rank, u64 n) {
+    return rank / n;
 }

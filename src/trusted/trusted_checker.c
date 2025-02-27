@@ -30,7 +30,7 @@ int nb_vars; // # variables in formula
 signature formula_sig; // formula signature
 u64 nb_solvers; // number of solvers
 u64 solver_id; 
-u64 solver_offset = 0;
+u64 solver_modulo_remainder = 0;
 
 bool do_logging = true;
 
@@ -112,14 +112,14 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
 #if IMPCHECK_PLRAT
             id = plrat_utils_get_next_valid_id(id, &offset, 
-            id_offsets, buf_hints->data, nb_hints, nb_solvers, solver_offset);
+            id_offsets, buf_hints->data, nb_hints, nb_solvers, solver_modulo_remainder);
 
             assert(last_id < id);
             last_id = id;
             trusted_utils_write_lrat_add(id, 
                 buf_lits->data, nb_lits,
                 buf_hints->data, nb_hints);
-            id -= solver_offset;
+            id -= solver_modulo_remainder;
 #endif
             if (share) {
                 // compute signature if desired
@@ -149,8 +149,8 @@ int tc_run(bool check_model, bool lenient) {
             say(res);
             nb_imported++;
 #if IMPCHECK_PLRAT
-            hash_table_insert(id_offsets, id, (void*)solver_offset);
-            id += solver_offset;
+            hash_table_insert(id_offsets, id, (void*)solver_modulo_remainder);
+            id += solver_modulo_remainder;
             trusted_utils_write_lrat_import(last_id, id, buf_lits->data, nb_lits);
 #endif
 
@@ -204,9 +204,9 @@ int tc_run(bool check_model, bool lenient) {
             plrat_utils_log(log_str);
 
             
-            solver_offset = (nb_solvers - (num_original_clauses % nb_solvers)) % nb_solvers;
+            solver_modulo_remainder = (nb_solvers - (num_original_clauses % nb_solvers)) % nb_solvers;
             
-            snprintf(log_str, 512, "solver_offset:%lu", solver_offset);
+            snprintf(log_str, 512, "solver_modulo_remainder:%lu", solver_modulo_remainder);
             plrat_utils_log(log_str);
             trusted_utils_write_end_load(TRUSTED_CHK_END_LOAD);
 #endif

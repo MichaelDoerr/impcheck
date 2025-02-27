@@ -121,7 +121,7 @@ void* hash_table_find(struct hash_table* ht, u64 key) {
     if (!find_entry(ht, key, &idx)) return 0;
     ht->last_found_idx = idx;
     assert(ht->data[idx].key == key);
-    assert(ht->data[idx].val);
+    //assert(ht->data[idx].val); //sometimes i have to save zeroes now
     return ht->data[idx].val;
 }
 
