@@ -66,6 +66,17 @@ add_executable(plrat_first_pass
 # Link against math library
 target_link_libraries(plrat_first_pass m)
 
+add_executable(plrat_reroute
+    src/trusted/main_plrat_reroute.c 
+    src/trusted/import_merger.c 
+    src/trusted/plrat_reroute.c
+    src/trusted/trusted_utils.c
+    src/trusted/plrat_utils.c 
+    src/trusted/vectors.c )
+
+    # Link against math library
+target_link_libraries(plrat_reroute m)
+
 add_executable(plrat_last_pass
     src/trusted/import_merger.c 
     src/trusted/trusted_utils.c 

@@ -1,8 +1,8 @@
 #include <stdbool.h>          // for bool
 #include <stdio.h>            // for fflush, stdout
 #include "trusted_utils.h"    // for trusted_utils_try_match_arg, trusted_ut...
-#include "plrat_utils.h"
 #include "plrat_reroute.h"
+//#include "plrat_utils.h"
 
 int main(int argc, char *argv[]) {
     // path/to/formula.cnf path/to/proofs/ <num-solvers> <solver-id> <redistribution-strategy>
@@ -21,9 +21,9 @@ int main(int argc, char *argv[]) {
     formula_path, proofs_path, num_solvers, solver_id, redistribution_strategy);
     //plrat_utils_log(output_path);
 
-    reroute_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
-    int res = reroute_run();
-    reroute_end();
+    plrat_reroute_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
+    plrat_reroute_run();
+    plrat_reroute_end();
     fflush(stdout);
-    return res;
+    return 0;
 }

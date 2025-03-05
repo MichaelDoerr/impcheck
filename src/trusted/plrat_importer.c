@@ -81,24 +81,24 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     redist_strat = redistribution_strategy;
     n_solvers = num_solvers;
     root_n = sqrt((double)num_solvers);
-    comm_size = (size_t)round(root_n); // round to nearest integer
+    comm_size = (size_t)ceil(root_n); // round to nearest integer
+    if(redist_strat == 1) {
+        comm_size = n_solvers;
+    }
     out_path = main_path;
     local_id = solver_id;
     all_lits = trusted_utils_malloc(sizeof(struct int_vec*) * (num_solvers));
     clauses = trusted_utils_malloc(sizeof(struct clause_vec*) * (num_solvers));
-    importfiles = trusted_utils_malloc(sizeof(FILE*) * num_solvers);
+    importfiles = trusted_utils_malloc(sizeof(FILE*) * comm_size);
     char msg[512];
     snprintf(msg, 512, "root_n:%f", root_n);
     plrat_utils_log(msg);
 
-    if(redist_strat == 1) {
-        comm_size = n_solvers;
-    }
 
     for (size_t i = 0; i < comm_size; i++) {
         char proof_path[512];
         if(redist_strat == 2) {
-            snprintf(proof_path, 512, "%s/%lu/%lu.plrat_proxy", out_path, plrat_importer_get_proxy_rank(i), local_id);
+            snprintf(proof_path, 512, "%s/%lu/%lu.plrat_proxy", out_path, plrat_importer_get_proxy_rank(i), plrat_utils_rank_to_x(local_id, comm_size));
         } else {
             snprintf(proof_path, 512, "%s/%lu/%lu.plrat_import", out_path, i, local_id);
         }

@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "vec.h": "c"
+        "vec.h": "c",
+        "plrat_reroute.h": "c",
+        "stdbool.h": "c"
     }
 }
