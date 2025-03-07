@@ -18,7 +18,7 @@
 const char* out_path;  // named pipe
 u64 n_solvers;         // number of solvers
 u64 redist_strat;      // redistribution_strategy
-u64 local_id;          // solver id
+u64 local_rank;          // solver id
 FILE* my_proof;
 const u64 empty_ID = -1;
 
@@ -70,10 +70,10 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     redist_strat = redistribution_strategy;
     n_solvers = num_solvers;
     out_path = main_path;
-    local_id = solver_id;
+    local_rank = solver_id;
     proof_lits = int_vec_init(1);
     char proof_path[512];
-    snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_id);
+    snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_rank);
     my_proof = fopen(proof_path, "r");
 
     skip_proof_header();
@@ -82,10 +82,10 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
 
     for (size_t i = 0; i < n_solvers; i++) {
         file_paths[i] = trusted_utils_malloc(512);
-        snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_import", out_path, local_id, i);
+        snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_import", out_path, local_rank, i);
     }
     current_literals = int_vec_init(1);
-    import_merger_init(solver_id, n_solvers, file_paths, &current_ID, current_literals);
+    import_merger_init(n_solvers, file_paths, &current_ID, current_literals);
 
     // free
     for (size_t i = 0; i < n_solvers; i++) {
@@ -166,14 +166,14 @@ void plrat_finder_run() {
                         break;
                     } else {
                         char err_str[512];
-                        snprintf(err_str, 512, "literals do not match in proof my rank:%lu ID:%lu", local_id, current_ID);
+                        snprintf(err_str, 512, "literals do not match in proof my rank:%lu ID:%lu", local_rank, current_ID);
                         plrat_utils_log_err(err_str);
                         exit(1);
                     }
                 }
                 if (id > current_ID) {
                     char err_str[512];
-                    snprintf(err_str, 512, "clause not found in proof my rank:%lu ID:%lu", local_id, current_ID);
+                    snprintf(err_str, 512, "clause not found in proof my rank:%lu ID:%lu", local_rank, current_ID);
                     plrat_utils_log_err(err_str);
                     exit(1);
                 }
@@ -199,6 +199,6 @@ void plrat_finder_run() {
         }
     }
     char msg[512];
-    snprintf(msg, 512, "Done local_id=%lu", local_id);
+    snprintf(msg, 512, "Done local_rank=%lu", local_rank);
     plrat_utils_log(msg);
 }

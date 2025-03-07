@@ -33,7 +33,7 @@ u64 n_solvers;         // number of solvers
 double root_n;          // square root of number of solvers
 size_t comm_size;
 u64 redist_strat;      // redistribution_strategy
-u64 local_id;          // solver id
+u64 local_rank;          // solver id
 
 // Buffering.
 struct int_vec** all_lits;
@@ -69,7 +69,7 @@ void plrat_importer_write_int(int value, FILE* current_out) {
 
 u64 plrat_importer_get_proxy_rank(size_t id) {
     u64 x = plrat_utils_rank_to_x(id, comm_size);
-    u64 y = plrat_utils_rank_to_y(local_id, comm_size);
+    u64 y = plrat_utils_rank_to_y(local_rank, comm_size);
     return plrat_utils_2d_to_rank(x, y, comm_size);
 }
 
@@ -86,7 +86,7 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
         comm_size = n_solvers;
     }
     out_path = main_path;
-    local_id = solver_id;
+    local_rank = solver_id;
     all_lits = trusted_utils_malloc(sizeof(struct int_vec*) * (num_solvers));
     clauses = trusted_utils_malloc(sizeof(struct clause_vec*) * (num_solvers));
     importfiles = trusted_utils_malloc(sizeof(FILE*) * comm_size);
@@ -98,14 +98,14 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     for (size_t i = 0; i < comm_size; i++) {
         char proof_path[512];
         if(redist_strat == 2) {
-            snprintf(proof_path, 512, "%s/%lu/%lu.plrat_proxy", out_path, plrat_importer_get_proxy_rank(i), plrat_utils_rank_to_x(local_id, comm_size));
+            snprintf(proof_path, 512, "%s/%lu/%lu.plrat_proxy", out_path, plrat_importer_get_proxy_rank(i), plrat_utils_rank_to_x(local_rank, comm_size));
         } else {
-            snprintf(proof_path, 512, "%s/%lu/%lu.plrat_import", out_path, i, local_id);
+            snprintf(proof_path, 512, "%s/%lu/%lu.plrat_import", out_path, i, local_rank);
         }
 
         plrat_utils_log(proof_path);
         importfiles[i] = fopen(proof_path, "w");
-        if (i != local_id) {
+        if (i != local_rank) {
             all_lits[i] = int_vec_init(1024);
             clauses[i] = clause_vec_init(1024);
         } else {
