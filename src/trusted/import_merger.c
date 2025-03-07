@@ -2,7 +2,6 @@
 
 const u64 _im_empty_ID = -1;
 
-int _im_local_id;
 size_t _im_n_files;
 int* _im_left_clauses;
 u64* _im_clause_ids;
@@ -10,7 +9,7 @@ struct int_vec** _im_all_lits;
 FILE** _im_import_files;
 // Buffering.
 
-u64* _im_current_id; // is -1 if no clause is available (end of files)
+u64* _im_current_id;  // is -1 if no clause is available (end of files)
 struct int_vec* _im_current_literals;
 
 void read_literals_index(int index, int nb_lits) {
@@ -38,18 +37,16 @@ void copy_lits(int* dest, int* src, int nb_lits) {
     }
 }
 
-void import_merger_init(unsigned long solver_id, int count_input_files, char** file_paths, u64* current_id, struct int_vec* current_literals) {
-    _im_local_id = solver_id;
+void import_merger_init(int count_input_files, char** file_paths, u64* current_id, struct int_vec* current_literals) {
     _im_n_files = count_input_files;
-    _im_current_id = current_id; // output location
-    _im_current_literals = current_literals; // output location
+    _im_current_id = current_id;              // output location
+    _im_current_literals = current_literals;  // output location
     _im_clause_ids = trusted_utils_malloc(sizeof(u64) * _im_n_files);
     _im_all_lits = trusted_utils_malloc(sizeof(struct int_vec*) * _im_n_files);
     _im_import_files = trusted_utils_malloc(sizeof(FILE*) * _im_n_files);
     _im_left_clauses = trusted_utils_malloc(sizeof(int) * _im_n_files);
-
-
     for (size_t i = 0; i < _im_n_files; i++) {
+        // plrat_utils_log(file_paths[i]);
         _im_import_files[i] = fopen(file_paths[i], "r");
         if (!(_im_import_files[i])) trusted_utils_exit_eof();
         _im_all_lits[i] = int_vec_init(1);
@@ -58,43 +55,44 @@ void import_merger_init(unsigned long solver_id, int count_input_files, char** f
     }
 }
 
-void import_merger_next(){
-    bool imports_left = true;
-    while (imports_left) {
-        imports_left = false;
-        *_im_current_id = -1;
-        size_t index_to_load = -1;
-        // find the smallest clause id
-        for (size_t i = 0; i < _im_n_files; i++) {
-            if (_im_clause_ids[i] != _im_empty_ID && _im_clause_ids[i] < *_im_current_id) {
-                *_im_current_id = _im_clause_ids[i];
-                index_to_load = i;
-                imports_left = true;
-            }
+void import_merger_next() {
+    bool imports_left = false;
+    *_im_current_id = -1;
+    size_t index_to_load = -1;
+    // find the smallest clause id
+    for (size_t i = 0; i < _im_n_files; i++) {
+        if (_im_clause_ids[i] != _im_empty_ID && _im_clause_ids[i] < *_im_current_id) {
+            *_im_current_id = _im_clause_ids[i];
+            index_to_load = i;
+            imports_left = true;
         }
-        if (!imports_left) {
-            break;
-        }
-        // load the lits
-        //char err_str1[512];
-        //snprintf(err_str1, 512, "HERE WE HAVE:%lu", index_to_load);
-        //plrat_utils_log_err(err_str1);
-        int_vec_resize(_im_current_literals, _im_all_lits[index_to_load]->size);
-        copy_lits(_im_current_literals->data, _im_all_lits[index_to_load]->data, _im_all_lits[index_to_load]->size);
+    }
 
-        load_clause_if_available(index_to_load);
-        // check and skip duplicates
-        for (size_t i = 0; i < _im_n_files; i++) {
-            if (index_to_load != i && _im_clause_ids[i] == *_im_current_id) {
-                *_im_current_id = _im_clause_ids[i];
-                if (!plrat_utils_compare_lits(_im_current_literals->data, _im_all_lits[i]->data, _im_current_literals->size, _im_all_lits[i]->size)) {
-                    char err_str[512];
-                    snprintf(err_str, 512, "literals do not match \nID:%lu index_to_load:%lu i:%lu", *_im_current_id, index_to_load, i);
-                    plrat_utils_log_err(err_str);
-                    exit(1);
-                }
-                load_clause_if_available(i);
+    //char msg[512];
+    //snprintf(msg, 512, "current_ID:%lu index_to_load:%lu imports_left:%d", *_im_current_id, index_to_load, imports_left);
+    //plrat_utils_log(msg);
+    if (!imports_left) {
+        return;
+    }
+    // load the lits
+    // char err_str1[512];
+    // snprintf(err_str1, 512, "HERE WE HAVE:%lu", index_to_load);
+    // plrat_utils_log_err(err_str1);
+    int_vec_resize(_im_current_literals, _im_all_lits[index_to_load]->size);
+    copy_lits(_im_current_literals->data, _im_all_lits[index_to_load]->data, _im_all_lits[index_to_load]->size);
+
+    load_clause_if_available(index_to_load);
+    // check and skip duplicates
+    for (size_t i = 0; i < _im_n_files; i++) {
+        if (index_to_load != i && _im_clause_ids[i] == *_im_current_id) {
+            *_im_current_id = _im_clause_ids[i];
+            if (!plrat_utils_compare_lits(_im_current_literals->data, _im_all_lits[i]->data, _im_current_literals->size, _im_all_lits[i]->size)) {
+                char err_str[512];
+                snprintf(err_str, 512, "literals do not match \nID:%lu index_to_load:%lu i:%lu", *_im_current_id, index_to_load, i);
+                plrat_utils_log_err(err_str);
+                exit(1);
             }
+            load_clause_if_available(i);
         }
     }
 }
