@@ -2,6 +2,7 @@
 #include "plrat_finder.h"
 
 #include <assert.h>
+#include <math.h>     // for sqrt
 #include <stdbool.h>  // for bool, true, false
 #include <stdio.h>    // for fclose, fflush_unlocked, fopen, snprintf
 #include <stdlib.h>   // for free
@@ -17,6 +18,8 @@
 
 const char* out_path;  // named pipe
 u64 n_solvers;         // number of solvers
+double root_n;         // square root of number of solvers
+size_t comm_size;
 u64 redist_strat;      // redistribution_strategy
 u64 local_rank;          // solver id
 FILE* my_proof;
@@ -69,6 +72,11 @@ void skip_proof_header() {
 void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
     redist_strat = redistribution_strategy;
     n_solvers = num_solvers;
+    root_n = sqrt((double)num_solvers);
+    comm_size = (size_t)ceil(root_n);  // round to nearest integer
+    if(redist_strat == 1) {
+        comm_size = n_solvers;
+    }
     out_path = main_path;
     local_rank = solver_id;
     proof_lits = int_vec_init(1);
@@ -78,17 +86,17 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
 
     skip_proof_header();
 
-    char** file_paths = trusted_utils_malloc(sizeof(char*) * n_solvers);
+    char** file_paths = trusted_utils_malloc(sizeof(char*) * comm_size);
 
-    for (size_t i = 0; i < n_solvers; i++) {
+    for (size_t i = 0; i < comm_size; i++) {
         file_paths[i] = trusted_utils_malloc(512);
         snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_import", out_path, local_rank, i);
     }
     current_literals = int_vec_init(1);
-    import_merger_init(n_solvers, file_paths, &current_ID, current_literals);
+    import_merger_init(comm_size, file_paths, &current_ID, current_literals);
 
     // free
-    for (size_t i = 0; i < n_solvers; i++) {
+    for (size_t i = 0; i < comm_size; i++) {
         free(file_paths[i]);
     }
     free(file_paths);

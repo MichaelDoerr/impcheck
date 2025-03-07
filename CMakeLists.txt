@@ -89,6 +89,9 @@ add_executable(plrat_last_pass
     src/trusted/hash.c 
     src/trusted/secret.c 
     src/trusted/lrat_check.c)
+    
+# Link against math library
+target_link_libraries(plrat_last_pass m)
 
 add_executable(test_hash 
     src/trusted/trusted_utils.c 
