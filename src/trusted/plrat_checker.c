@@ -33,6 +33,7 @@ FILE* proof;            // named pipe
 int nb_vars;            // # variables in formula
 signature formula_sig;  // formula signature
 u64 nb_solvers;         // number of solvers
+u64 solver_rank;        // solver id
 u64 redist;             // redistribution_strategy
 u64 pc_nb_loaded_clauses;  // number of loaded clauses
 
@@ -68,7 +69,7 @@ void skip_proof_header() {
         c = trusted_utils_read_char(proof);
     }
 
-    if (c == TRUSTED_CHK_END_LOAD) {
+    if (c == TRUSTED_CHK_END_LOAD && solver_rank == 0) {
         plrat_utils_log("Header Skipped");
     }
 }
@@ -117,9 +118,11 @@ bool pc_load_from_file(FILE* formular) {
         plrat_utils_log_err("Error reading the first line of the formula file");
         return false;
     } else {
-        char msg[512];
-        snprintf(msg, 512, "Finished reading the formula file: cnf %i %li:", nb_vars, nClauses);
-        plrat_utils_log(msg);
+        if (solver_rank == 0) {
+            char msg[512];
+            snprintf(msg, 512, "Finished reading the formula file: cnf %i %li:", nb_vars, nClauses);
+            plrat_utils_log(msg);
+        }
     }
     
     top_check_init(nb_vars, false, false);
@@ -138,9 +141,12 @@ bool pc_load_from_file(FILE* formular) {
 
     top_check_end_load();
     pc_nb_loaded_clauses = top_check_get_nb_loaded_clauses();
-    char log_str[512];
-    snprintf(log_str, 512, "Formular Loaded nb_clauses:%lu", pc_nb_loaded_clauses);
-    plrat_utils_log(log_str);
+    
+    if (solver_rank == 0) {
+        char log_str[512];
+        snprintf(log_str, 512, "Formular Loaded nb_clauses:%lu", pc_nb_loaded_clauses);
+        plrat_utils_log(log_str);
+    }
 
     return no_error;
 }
@@ -158,6 +164,7 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
     buf_lits = int_vec_init(1 << 14);
     buf_hints = u64_vec_init(1 << 14);
     nb_solvers = num_solvers;
+    solver_rank = solver_id;
     plrat_importer_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
     if (!pc_load_from_file(formular)) { //!pc_load() || 
         exit(0);

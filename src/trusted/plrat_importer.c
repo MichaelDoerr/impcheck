@@ -90,9 +90,11 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     all_lits = trusted_utils_malloc(sizeof(struct int_vec*) * (num_solvers));
     clauses = trusted_utils_malloc(sizeof(struct clause_vec*) * (num_solvers));
     importfiles = trusted_utils_malloc(sizeof(FILE*) * comm_size);
-    char msg[512];
-    snprintf(msg, 512, "root_n:%f", root_n);
-    plrat_utils_log(msg);
+    if(local_rank == 0) {
+        char msg[512];
+        snprintf(msg, 512, "root_n:%f", root_n);
+        plrat_utils_log(msg);
+    }
 
 
     for (size_t i = 0; i < comm_size; i++) {
@@ -103,7 +105,7 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
             snprintf(proof_path, 512, "%s/%lu/%lu.plrat_import", out_path, i, local_rank);
         }
 
-        plrat_utils_log(proof_path);
+        //plrat_utils_log(proof_path);
         importfiles[i] = fopen(proof_path, "w");
         if (i != local_rank) {
             all_lits[i] = int_vec_init(1024);
