@@ -30,7 +30,6 @@
 #undef TYPE
 
 FILE* proof;            // named pipe
-FILE* formular;         // named pipe
 int nb_vars;            // # variables in formula
 signature formula_sig;  // formula signature
 u64 nb_solvers;         // number of solvers
@@ -54,35 +53,29 @@ void read_hints(int nb_hints) {
     trusted_utils_read_uls(buf_hints->data, nb_hints, proof);
 }
 
-void pc_init(const char* formula_path, const char* proofs_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
-    char proof_path[512];
-    snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
-
-    proof = fopen(proof_path, "r");
-    if (!proof) trusted_utils_exit_eof();
-    formular = fopen(formula_path, "r");
-    if (!formular) trusted_utils_exit_eof();
-    UNUSED(formula_path);
-    buf_lits = int_vec_init(1 << 14);
-    buf_hints = u64_vec_init(1 << 14);
-    nb_solvers = num_solvers;
-    plrat_importer_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
-}
-
-void pc_end() {
-    plrat_importer_end();
-    top_check_end();
-    int_vec_free(buf_lits);
-    u64_vec_free(buf_hints);
-    fclose(formular);
-    fclose(proof);
-}
-
-int pc_run() {
-    clock_t start = clock();
-    u64 nb_produced = 0, nb_imported = 0, nb_deleted = 0;
-    bool reported_error = false;
+void skip_proof_header() {
     char c = '\0';
+
+    c = trusted_utils_read_char(proof);
+    if (c == TRUSTED_CHK_INIT) {
+        trusted_utils_skip_bytes(sizeof(int), proof);
+    }
+
+    c = trusted_utils_read_char(proof);
+    while (c == TRUSTED_CHK_LOAD) {
+        const int nb_lits = trusted_utils_read_int(proof);
+        trusted_utils_skip_bytes(nb_lits * sizeof(int), proof);
+        c = trusted_utils_read_char(proof);
+    }
+
+    if (c == TRUSTED_CHK_END_LOAD) {
+        plrat_utils_log("Header Skipped");
+    }
+}
+
+bool pc_load() {
+    char c = '\0';
+    bool no_error = true;
 
     c = trusted_utils_read_char(proof);
     if (c == TRUSTED_CHK_INIT) {
@@ -90,19 +83,14 @@ int pc_run() {
         top_check_init(nb_vars, false, false);
     } else {
         trusted_utils_log_err("Invalid INIT");
-        reported_error = true;
+        no_error = false;
     }
 
     c = trusted_utils_read_char(proof);
     while (c == TRUSTED_CHK_LOAD) {
-        if (c == TRUSTED_CHK_LOAD) {
-            const int nb_lits = trusted_utils_read_int(proof);
-            read_literals(nb_lits);
-            for (int i = 0; i < nb_lits; i++) top_check_load(buf_lits->data[i]);
-        } else {
-            trusted_utils_log_err("Invalid LOAD");
-            reported_error = true;
-        }
+        const int nb_lits = trusted_utils_read_int(proof);
+        read_literals(nb_lits);
+        for (int i = 0; i < nb_lits; i++) top_check_load(buf_lits->data[i]);
         c = trusted_utils_read_char(proof);
     }
 
@@ -116,8 +104,80 @@ int pc_run() {
         char err_str[512];
         snprintf(err_str, 512, "Invalid END_LOAD c:%c", c);
         plrat_utils_log_err(err_str);
-        reported_error = true;
+        no_error = false;
     }
+    return no_error;
+}
+
+bool pc_load_from_file(FILE* formular) {
+    int nb_vars;
+    long nClauses;
+    int tmp = fscanf (formular, "p cnf %i %li \n", &nb_vars, &nClauses); // Read the first line
+    if (tmp == EOF) {
+        plrat_utils_log_err("Error reading the first line of the formula file");
+        return false;
+    } else {
+        char msg[512];
+        snprintf(msg, 512, "Finished reading the formula file: cnf %i %li:", nb_vars, nClauses);
+        plrat_utils_log(msg);
+    }
+    
+    top_check_init(nb_vars, false, false);
+    bool no_error = true;
+    while (tmp != EOF) {
+        int lit;
+        tmp = fscanf(formular, " %i ", &lit);
+        
+        //char msg[512];
+        //snprintf(msg, 512, "i %i", lit);
+        //plrat_utils_log(msg);
+
+        top_check_load(lit);
+        
+    }
+
+    top_check_end_load();
+    pc_nb_loaded_clauses = top_check_get_nb_loaded_clauses();
+    char log_str[512];
+    snprintf(log_str, 512, "Formular Loaded nb_clauses:%lu", pc_nb_loaded_clauses);
+    plrat_utils_log(log_str);
+
+    return no_error;
+}
+
+void pc_init(const char* formula_path, const char* proofs_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
+    char proof_path[512];
+    FILE* formular;
+    snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
+
+    proof = fopen(proof_path, "r");
+    if (!proof) trusted_utils_exit_eof();
+    formular = fopen(formula_path, "r");
+    if (!formular) trusted_utils_exit_eof();
+    UNUSED(formula_path);
+    buf_lits = int_vec_init(1 << 14);
+    buf_hints = u64_vec_init(1 << 14);
+    nb_solvers = num_solvers;
+    plrat_importer_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
+    if (!pc_load_from_file(formular)) { //!pc_load() || 
+        exit(0);
+    }
+    fclose(formular);
+    skip_proof_header();
+}
+
+void pc_end() {
+    plrat_importer_end();
+    top_check_end();
+    int_vec_free(buf_lits);
+    u64_vec_free(buf_hints);
+    fclose(proof);
+}
+
+int pc_run() {
+    clock_t start = clock();
+    u64 nb_produced = 0, nb_imported = 0, nb_deleted = 0;
+    bool reported_error = false;
 
     while (true) {
         int c = trusted_utils_read_char(proof);
