@@ -113,16 +113,31 @@ bool pc_load() {
 bool pc_load_from_file(FILE* formular) {
     int nb_vars;
     long nClauses;
-    int tmp = fscanf (formular, "p cnf %i %li \n", &nb_vars, &nClauses); // Read the first line
-    if (tmp == EOF) {
-        plrat_utils_log_err("Error reading the first line of the formula file");
-        return false;
-    } else {
-        if (solver_rank == 0) {
-            char msg[512];
-            snprintf(msg, 512, "Finished reading the formula file: cnf %i %li:", nb_vars, nClauses);
-            plrat_utils_log(msg);
+
+    char buffer[1024];
+    bool foundPcnf = false;
+    int tmp = 0;
+    
+    while (fgets(buffer, sizeof(buffer), formular)) {
+        if (buffer[0] == 'c') continue;  // Skip comments
+        
+        // Check for the line starting with "p cnf"
+        tmp = sscanf(buffer, "p cnf %i %li \n", &nb_vars, &nClauses);
+        if (tmp == 2) {
+            foundPcnf = true;
+            break;
         }
+    }
+
+    if (!foundPcnf) {
+        plrat_utils_log_err("Error: 'p cnf' line not found in the formula file");
+        return false;
+    }
+
+    if (solver_rank == 0) {
+        char msg[512];
+        snprintf(msg, 512, "Finished reading the formula file: cnf %i %li:", nb_vars, nClauses);
+        plrat_utils_log(msg);
     }
     
     top_check_init(nb_vars, false, false);
