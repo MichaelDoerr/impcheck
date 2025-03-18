@@ -171,8 +171,9 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
     FILE* formular;
     snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
 
-    proof = fopen(proof_path, "r");
+    proof = fopen(proof_path, "rb");
     if (!proof) trusted_utils_exit_eof();
+    setvbuf(proof, NULL, _IOFBF, 1 << 28); // 256MB buffer
     formular = fopen(formula_path, "r");
     if (!formular) trusted_utils_exit_eof();
     UNUSED(formula_path);

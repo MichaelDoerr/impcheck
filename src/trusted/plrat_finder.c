@@ -8,6 +8,7 @@
 #include <stdlib.h>   // for free
 #include <time.h>     // for clock, CLOCKS_PER_SEC, clock_t
 
+#include "plrat_buffered_read.h"
 #include "checker_interface.h"
 #include "import_merger.h"
 #include "hash.h"
@@ -36,28 +37,24 @@ struct int_vec* proof_lits;
 
 void read_literals(int nb_lits) {
     int_vec_reserve(proof_lits, nb_lits);
-    trusted_utils_read_ints(proof_lits->data, nb_lits, my_proof);
+    plrat_reader_read_ints(proof_lits->data, nb_lits);
 }
 
 void skip_proof_header() {
     char c = '\0';
 
-    c = trusted_utils_read_char(my_proof);
+    c = plrat_reader_read_char();
     if (c == TRUSTED_CHK_INIT) {
-        trusted_utils_skip_bytes(sizeof(int), my_proof);
+        plrat_reader_skip_bytes(sizeof(int));
     } else {
         trusted_utils_log_err("Invalid INIT");
     }
 
-    c = trusted_utils_read_char(my_proof);
+    c = plrat_reader_read_char();
     while (c == TRUSTED_CHK_LOAD) {
-        if (c == TRUSTED_CHK_LOAD) {
-            const int nb_lits = trusted_utils_read_int(my_proof);
-            trusted_utils_skip_bytes(nb_lits * sizeof(int), my_proof);
-        } else {
-            trusted_utils_log_err("Invalid LOAD");
-        }
-        c = trusted_utils_read_char(my_proof);
+        const int nb_lits = plrat_reader_read_int();
+        plrat_reader_skip_bytes(nb_lits * sizeof(int));
+        c = plrat_reader_read_char();
     }
 
     if (c == TRUSTED_CHK_END_LOAD) {
@@ -82,7 +79,8 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     proof_lits = int_vec_init(1);
     char proof_path[512];
     snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_rank);
-    my_proof = fopen(proof_path, "r");
+    my_proof = fopen(proof_path, "rb");
+    plrat_reader_init(1<<10, my_proof);
 
     skip_proof_header();
 
@@ -151,24 +149,24 @@ void plrat_finder_run() {
         if (current_ID == empty_ID) break;
 
         while (true) {
-            int c = trusted_utils_read_char(my_proof);
+            int c = plrat_reader_read_char();
             if (c == TRUSTED_CHK_CLS_PRODUCE) {
                 // parse
-                u64 id = trusted_utils_read_ul(my_proof);
-                const int nb_lits = trusted_utils_read_int(my_proof);
+                u64 id = plrat_reader_read_ul();
+                const int nb_lits = plrat_reader_read_int();
                 int nb_hints;
                 // skip line
                 if (id < current_ID) {
-                    trusted_utils_skip_bytes(nb_lits * sizeof(int), my_proof);
-                    nb_hints = trusted_utils_read_int(my_proof);
-                    trusted_utils_skip_bytes(nb_hints * sizeof(u64), my_proof);
+                    plrat_reader_skip_bytes(nb_lits * sizeof(int));
+                    nb_hints = plrat_reader_read_int();
+                    plrat_reader_skip_bytes(nb_hints * sizeof(u64));
                     continue;
                 }
                 // check if the clause is the same
                 if (id == current_ID) {
                     read_literals(nb_lits);
-                    nb_hints = trusted_utils_read_int(my_proof);
-                    trusted_utils_skip_bytes(nb_hints * sizeof(u64), my_proof);
+                    nb_hints = plrat_reader_read_int();
+                    plrat_reader_skip_bytes(nb_hints * sizeof(u64));
                     if (plrat_utils_compare_lits(current_literals->data, proof_lits->data, current_literals->size, nb_lits)) {
                         // plrat_utils_log("found clause, nice");
                         break;
@@ -187,14 +185,14 @@ void plrat_finder_run() {
                 }
 
             } else if (c == TRUSTED_CHK_CLS_IMPORT) {
-                trusted_utils_skip_bytes(sizeof(u64), my_proof);
-                const int nb_lits = trusted_utils_read_int(my_proof);
-                trusted_utils_skip_bytes(nb_lits * sizeof(int), my_proof);
+                plrat_reader_skip_bytes(sizeof(u64));
+                const int nb_lits = plrat_reader_read_int();
+                plrat_reader_skip_bytes(nb_lits * sizeof(int));
 
             } else if (c == TRUSTED_CHK_CLS_DELETE) {
                 // parse
-                const int nb_hints = trusted_utils_read_int(my_proof);
-                trusted_utils_skip_bytes(nb_hints * sizeof(u64), my_proof);
+                const int nb_hints = plrat_reader_read_int();
+                plrat_reader_skip_bytes(nb_hints * sizeof(u64));
 
             } else if (c == TRUSTED_CHK_TERMINATE) {
                 break;

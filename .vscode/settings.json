@@ -2,6 +2,8 @@
     "files.associations": {
         "vec.h": "c",
         "plrat_reroute.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "trusted_utils.h": "c",
+        "array": "c"
     }
 }
