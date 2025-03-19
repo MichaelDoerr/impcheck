@@ -91,6 +91,7 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
         snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_import", out_path, local_rank, i);
     }
     current_literals = int_vec_init(1);
+    
     import_merger_init(comm_size, file_paths, &current_ID, current_literals);
 
     // free

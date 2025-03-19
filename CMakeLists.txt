@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.11.4)
 project (impcheck_modules)
 
-add_definitions("-std=gnu99 -Wall -Wextra -Werror -pedantic-errors -flto -g")
+add_definitions("-std=gnu99 -Wall -Wextra -Werror -pedantic-errors -flto -g") 
 if(IMPCHECK_WRITE_DIRECTIVES)
     add_definitions("-DIMPCHECK_WRITE_DIRECTIVES=${IMPCHECK_WRITE_DIRECTIVES}")
 endif()
@@ -60,6 +60,7 @@ add_executable(plrat_first_pass
     src/trusted/lrat_check.c 
     src/trusted/siphash.c 
     src/trusted/hash.c 
+    src/writer.c 
     src/trusted/secret.c 
     src/trusted/confirm.c)
     
@@ -70,6 +71,10 @@ add_executable(plrat_reroute
     src/trusted/plrat_reroute.c
     src/trusted/trusted_utils.c
     src/trusted/plrat_utils.c 
+    src/trusted/lrat_check.c 
+    src/trusted/siphash.c 
+    src/writer.c 
+    src/trusted/hash.c 
     src/trusted/vectors.c )
 
 
