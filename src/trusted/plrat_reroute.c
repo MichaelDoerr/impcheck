@@ -97,7 +97,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         
     }
     _re_current_literals = int_vec_init(1);
-    import_merger_init(comm_size, file_paths, &_re_current_ID, _re_current_literals);
+    //import_merger_init(comm_size, file_paths, &_re_current_ID, _re_current_literals);
 
     // free
     for (size_t i = 0; i < comm_size; i++) {

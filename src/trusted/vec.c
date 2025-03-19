@@ -22,7 +22,7 @@ void TYPED(vec_reserve)(struct TYPED(vec)* vec, u64 new_cap) {
         vec->data = (TYPE*) trusted_utils_realloc(vec->data, new_cap * sizeof(TYPE));
         vec->capacity = new_cap;
     }
-    if (vec->size > new_cap) vec->size = new_cap; // shrink
+    //if (vec->size > new_cap) vec->size = new_cap; // shrink // <- this can only cause to trigger unnecessary reallocs later
 }
 
 void TYPED(vec_resize)(struct TYPED(vec)* vec, u64 new_size) {

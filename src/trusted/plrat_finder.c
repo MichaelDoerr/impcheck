@@ -31,7 +31,8 @@ struct int_vec** all_lits;
 int* left_clauses;
 FILE** importfiles;
 u64 current_ID = empty_ID;
-struct int_vec* current_literals;
+int* current_literals_data;
+u64 current_literals_size;
 
 struct int_vec* proof_lits;
 
@@ -90,9 +91,9 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
         file_paths[i] = trusted_utils_malloc(512);
         snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_import", out_path, local_rank, i);
     }
-    current_literals = int_vec_init(1);
     
-    import_merger_init(comm_size, file_paths, &current_ID, current_literals);
+    
+    import_merger_init(comm_size, file_paths, &current_ID, &current_literals_data, &current_literals_size);
 
     // free
     for (size_t i = 0; i < comm_size; i++) {
@@ -168,12 +169,25 @@ void plrat_finder_run() {
                     read_literals(nb_lits);
                     nb_hints = plrat_reader_read_int();
                     plrat_reader_skip_bytes(nb_hints * sizeof(u64));
-                    if (plrat_utils_compare_lits(current_literals->data, proof_lits->data, current_literals->size, nb_lits)) {
+                    if (plrat_utils_compare_lits(current_literals_data, proof_lits->data, current_literals_size, nb_lits)) {
                         // plrat_utils_log("found clause, nice");
                         break;
                     } else {
                         char err_str[512];
                         snprintf(err_str, 512, "literals do not match in proof my rank:%lu ID:%lu", local_rank, current_ID);
+                        if(local_rank == 0) {
+                            printf("current_literals_data %lu: ", current_literals_size);
+                            for (u64 i = 0; i < current_literals_size; i++) {
+                                printf("%d ", current_literals_data[i]);
+                            }
+                            printf("\n");
+                            printf("proof_lits %i: ", nb_lits);
+                            for (int i = 0; i < nb_lits; i++) {
+                                printf("%d ", proof_lits->data[i]);
+                            }
+                            printf("\n");
+                        }
+                    
                         plrat_utils_log_err(err_str);
                         exit(1);
                     }
