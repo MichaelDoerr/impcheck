@@ -1,4 +1,5 @@
 #include "import_merger.h"
+#include "plrat_file_reader.h"
 
 const u64 _im_empty_ID = -1;
 
@@ -6,7 +7,7 @@ size_t _im_n_files;
 int* _im_left_clauses;
 u64* _im_clause_ids;
 struct int_vec** _im_all_lits;
-FILE** _im_import_files;
+struct plrat_reader** _im_import_files;
 int last_index_to_load = 0;
 // Buffering.
 
@@ -17,14 +18,14 @@ u64* _im_current_literals_size;
 void read_literals_index(int index, int nb_lits) {
     struct int_vec* buf_lits = _im_all_lits[index];
     int_vec_resize(buf_lits, nb_lits);
-    trusted_utils_read_ints(buf_lits->data, nb_lits, _im_import_files[index]);
+    plrat_reader_read_ints(buf_lits->data, nb_lits, _im_import_files[index]);
 }
 
 void load_clause_if_available(int index) {
     if (MALLOB_LIKELY(_im_left_clauses[index] > 0)) {
-        FILE* file = _im_import_files[index];
-        _im_clause_ids[index] = trusted_utils_read_ul(file);
-        int nb_lits = trusted_utils_read_int(file);
+        struct plrat_reader* file = _im_import_files[index];
+        _im_clause_ids[index] = plrat_reader_read_ul(file);
+        int nb_lits = plrat_reader_read_int(file);
         read_literals_index(index, nb_lits);
         _im_left_clauses[index] -= 1;
     } else {
@@ -45,14 +46,15 @@ void import_merger_init(int count_input_files, char** file_paths, u64* current_i
     _im_current_literals_size = current_literals_size;  // output location
     _im_clause_ids = trusted_utils_malloc(sizeof(u64) * _im_n_files);
     _im_all_lits = trusted_utils_malloc(sizeof(struct int_vec*) * _im_n_files);
-    _im_import_files = trusted_utils_malloc(sizeof(FILE*) * _im_n_files);
+    _im_import_files = trusted_utils_malloc(sizeof(struct plrat_reader*) * _im_n_files);
     _im_left_clauses = trusted_utils_malloc(sizeof(int) * _im_n_files);
     for (size_t i = 0; i < _im_n_files; i++) {
         // plrat_utils_log(file_paths[i]);
-        _im_import_files[i] = fopen(file_paths[i], "r");
+        
+        _im_import_files[i] = plrat_reader_init(1 << 24, fopen(file_paths[i], "r"), -1);
         if (!(_im_import_files[i])) trusted_utils_exit_eof();
         _im_all_lits[i] = int_vec_init(1);
-        _im_left_clauses[i] = trusted_utils_read_int(_im_import_files[i]);
+        _im_left_clauses[i] = plrat_reader_read_int(_im_import_files[i]);
         
     }
     // load the first clause of each file exept for 0

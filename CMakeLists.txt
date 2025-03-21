@@ -62,7 +62,8 @@ add_executable(plrat_first_pass
     src/trusted/hash.c 
     src/writer.c 
     src/trusted/secret.c 
-    src/trusted/confirm.c)
+    src/trusted/confirm.c
+    src/trusted/plrat_file_reader.c)
     
 
 add_executable(plrat_reroute
@@ -75,6 +76,7 @@ add_executable(plrat_reroute
     src/trusted/siphash.c 
     src/writer.c 
     src/trusted/hash.c 
+    src/trusted/plrat_file_reader.c
     src/trusted/vectors.c )
 
 
@@ -90,6 +92,7 @@ add_executable(plrat_last_pass
     src/trusted/hash.c 
     src/trusted/secret.c 
     src/trusted/lrat_check.c
+    src/trusted/plrat_file_reader.c
     src/trusted/plrat_buffered_read.c)
     
 # Link against math library
