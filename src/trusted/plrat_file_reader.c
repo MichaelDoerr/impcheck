@@ -22,14 +22,14 @@ void fill_buffer(struct plrat_reader* reader) {
     reader->pos = reader->read_buffer;
     reader->end = reader->pos + read_size;
     reader->remaining_bytes -= read_size;
-    if (reader->local_rank == 0) {
-        printf("read %lu bytes\n", read_size);
-        printf("remaining bytes: %lu\n", reader->remaining_bytes);
-        printf("buffer size: %lu\n", reader->buffer_size);
-        printf("pos: %p\n", reader->pos);
-        printf("end: %p\n", reader->end);
-        printf("read buffer: %p\n", reader->read_buffer);
-    }
+    //if (reader->local_rank == 0) {
+    //    printf("read %lu bytes\n", read_size);
+    //    printf("remaining bytes: %lu\n", reader->remaining_bytes);
+    //    printf("buffer size: %lu\n", reader->buffer_size);
+    //    printf("pos: %p\n", reader->pos);
+    //    printf("end: %p\n", reader->end);
+    //    printf("read buffer: %p\n", reader->read_buffer);
+    //}
 }
 
 struct plrat_reader* plrat_reader_init(u64 buffer_size_bytes, FILE* file, int local_rank) {

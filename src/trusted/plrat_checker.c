@@ -143,16 +143,14 @@ bool pc_load_from_file(FILE* formular) {
     
     top_check_init(nb_vars, false, false);
     bool no_error = true;
-    while (tmp != EOF) {
+    while (true) {
         int lit;
         tmp = fscanf(formular, " %i ", &lit);
         
-        //char msg[512];
-        //snprintf(msg, 512, "i %i", lit);
-        //plrat_utils_log(msg);
+        if (tmp == EOF) break;
 
         top_check_load(lit);
-        
+        //printf("lit: %i\n", lit);
     }
 
     top_check_end_load();

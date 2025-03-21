@@ -41,5 +41,7 @@ void TYPED(vec_push)(struct TYPED(vec)* vec, TYPE elem) {
 }
 
 void TYPED(vec_clear)(struct TYPED(vec)* vec) {
-    TYPED(vec_reserve)(vec, 0);
+    vec->size = 0;
+    vec->capacity = 1;
+    vec->data = trusted_utils_realloc(vec->data, sizeof(TYPE));
 }
