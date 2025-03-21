@@ -25,7 +25,8 @@ u64 local_rank;      // solver id
 const u64 empty_ID = -1;
 
 // Buffering.
-struct int_vec* _re_current_literals;
+int* _re_current_literals_data;
+u64 _re_current_literals_size;
 u64 _re_current_ID = empty_ID;
 u64* _re_count_clauses;
 FILE** _re_output_files;
@@ -96,8 +97,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         if (local_rank == 6) plrat_utils_log(file_paths[i]);
         
     }
-    _re_current_literals = int_vec_init(1);
-    //import_merger_init(comm_size, file_paths, &_re_current_ID, _re_current_literals);
+    import_merger_init(comm_size, file_paths, &_re_current_ID, &_re_current_literals_data, &_re_current_literals_size);
 
     // free
     for (size_t i = 0; i < comm_size; i++) {
@@ -121,7 +121,6 @@ void plrat_reroute_end() {
     }
     free(_re_count_clauses);
     free(_re_output_files);
-    int_vec_free(_re_current_literals);
 }
 
 void plrat_reroute_run() {
@@ -137,8 +136,8 @@ void plrat_reroute_run() {
         
         plrat_reroute_write_lrat_import_file(
             _re_current_ID,
-            _re_current_literals->data,
-            _re_current_literals->size,
+            _re_current_literals_data,
+            _re_current_literals_size,
             _re_output_files[destination_index]);
 
         _re_count_clauses[destination_index] += 1;
