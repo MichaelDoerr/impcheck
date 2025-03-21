@@ -64,6 +64,18 @@ void import_merger_init(int count_input_files, char** file_paths, u64* current_i
     }
 }
 
+void import_merger_end() {
+    for (size_t i = 0; i < _im_n_files; i++) {
+        plrat_reader_end(_im_import_files[i]);
+        int_vec_free(_im_all_lits[i]);
+        free(_im_import_files[i]);
+    }
+    free(_im_import_files);
+    free(_im_all_lits);
+    free(_im_clause_ids);
+    free(_im_left_clauses);
+}
+
 void import_merger_next() {
     load_clause_if_available(last_index_to_load);  
     bool imports_left = false;

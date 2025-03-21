@@ -163,6 +163,11 @@ bool hash_table_delete_last_found(struct hash_table* ht) {
 }
 
 void hash_table_free(struct hash_table* ht) {
+    for (u64 i = 0; i < ht->capacity; i++) {
+        if (!cell_empty(&ht->data[i])) {
+            free(ht->data[i].val);
+        }
+    }
     free(ht->data);
     free(ht);
 }

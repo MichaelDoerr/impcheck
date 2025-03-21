@@ -1,5 +1,5 @@
 
-#include "plrat_checker.h"  // for trusted_utils_read_int, trusted_utils_log...
+#include "plrat_checker.h"  // for plrat_reader_read_int, trusted_utils_log...
 
 #include <assert.h>
 #include <stdbool.h>  // for bool, true, false
@@ -12,6 +12,7 @@
 #include "plrat_importer.h"
 #include "plrat_utils.h"
 #include "top_check.h"  // for top_check_commit_formula_sig, top_check_d...
+#include "plrat_file_reader.h"
 
 #define UNUSED(x) (void)(x)
 
@@ -29,7 +30,7 @@
 #undef TYPED
 #undef TYPE
 
-FILE* proof;            // named pipe
+struct plrat_reader* proof;            // named pipe
 int nb_vars;            // # variables in formula
 signature formula_sig;  // formula signature
 u64 nb_solvers;         // number of solvers
@@ -46,27 +47,27 @@ struct u64_vec* buf_hints;
 
 void read_literals(int nb_lits) {
     int_vec_reserve(buf_lits, nb_lits);
-    trusted_utils_read_ints(buf_lits->data, nb_lits, proof);
+    plrat_reader_read_ints(buf_lits->data, nb_lits, proof);
 }
 
 void read_hints(int nb_hints) {
     u64_vec_reserve(buf_hints, nb_hints);
-    trusted_utils_read_uls(buf_hints->data, nb_hints, proof);
+    plrat_reader_read_uls(buf_hints->data, nb_hints, proof);
 }
 
 void skip_proof_header() {
     char c = '\0';
 
-    c = trusted_utils_read_char(proof);
+    c = plrat_reader_read_char(proof);
     if (c == TRUSTED_CHK_INIT) {
-        trusted_utils_skip_bytes(sizeof(int), proof);
+        plrat_reader_skip_bytes(sizeof(int), proof);
     }
 
-    c = trusted_utils_read_char(proof);
+    c = plrat_reader_read_char(proof);
     while (c == TRUSTED_CHK_LOAD) {
-        const int nb_lits = trusted_utils_read_int(proof);
-        trusted_utils_skip_bytes(nb_lits * sizeof(int), proof);
-        c = trusted_utils_read_char(proof);
+        const int nb_lits = plrat_reader_read_int(proof);
+        plrat_reader_skip_bytes(nb_lits * sizeof(int), proof);
+        c = plrat_reader_read_char(proof);
     }
 
     if (c == TRUSTED_CHK_END_LOAD && solver_rank == 0) {
@@ -78,21 +79,21 @@ bool pc_load() {
     char c = '\0';
     bool no_error = true;
 
-    c = trusted_utils_read_char(proof);
+    c = plrat_reader_read_char(proof);
     if (c == TRUSTED_CHK_INIT) {
-        nb_vars = trusted_utils_read_int(proof);
+        nb_vars = plrat_reader_read_int(proof);
         top_check_init(nb_vars, false, false);
     } else {
         trusted_utils_log_err("Invalid INIT");
         no_error = false;
     }
 
-    c = trusted_utils_read_char(proof);
+    c = plrat_reader_read_char(proof);
     while (c == TRUSTED_CHK_LOAD) {
-        const int nb_lits = trusted_utils_read_int(proof);
+        const int nb_lits = plrat_reader_read_int(proof);
         read_literals(nb_lits);
         for (int i = 0; i < nb_lits; i++) top_check_load(buf_lits->data[i]);
-        c = trusted_utils_read_char(proof);
+        c = plrat_reader_read_char(proof);
     }
 
     if (c == TRUSTED_CHK_END_LOAD) {
@@ -136,7 +137,7 @@ bool pc_load_from_file(FILE* formular) {
 
     if (solver_rank == 0) {
         char msg[512];
-        snprintf(msg, 512, "Finished reading the formula file: cnf %i %li:", nb_vars, nClauses);
+        snprintf(msg, 512, "Start reading the formula file: cnf %i %li:", nb_vars, nClauses);
         plrat_utils_log(msg);
     }
     
@@ -171,9 +172,9 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
     FILE* formular;
     snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
 
-    proof = fopen(proof_path, "rb");
-    if (!proof) trusted_utils_exit_eof();
-    setvbuf(proof, NULL, _IOFBF, 1 << 28); // 256MB buffer
+    FILE* proof_stream = fopen(proof_path, "r");
+    if (!proof_stream) trusted_utils_exit_eof();
+    proof = plrat_reader_init(1 << 24, proof_stream, solver_id);
     formular = fopen(formula_path, "r");
     if (!formular) trusted_utils_exit_eof();
     UNUSED(formula_path);
@@ -194,7 +195,7 @@ void pc_end() {
     top_check_end();
     int_vec_free(buf_lits);
     u64_vec_free(buf_hints);
-    fclose(proof);
+    plrat_reader_end(proof);
 }
 
 int pc_run() {
@@ -203,13 +204,13 @@ int pc_run() {
     bool reported_error = false;
 
     while (true) {
-        int c = trusted_utils_read_char(proof);
+        int c = plrat_reader_read_char(proof);
         if (c == TRUSTED_CHK_CLS_PRODUCE) {
             // parse
-            u64 id = trusted_utils_read_ul(proof);
-            const int nb_lits = trusted_utils_read_int(proof);
+            u64 id = plrat_reader_read_ul(proof);
+            const int nb_lits = plrat_reader_read_int(proof);
             read_literals(nb_lits);
-            const int nb_hints = trusted_utils_read_int(proof);
+            const int nb_hints = plrat_reader_read_int(proof);
             read_hints(nb_hints);
             // forward to checker
             top_check_produce(id, buf_lits->data, nb_lits,
@@ -218,8 +219,8 @@ int pc_run() {
 
         } else if (c == TRUSTED_CHK_CLS_IMPORT) {
             // parse
-            const u64 id = trusted_utils_read_ul(proof);
-            const int nb_lits = trusted_utils_read_int(proof);
+            const u64 id = plrat_reader_read_ul(proof);
+            const int nb_lits = plrat_reader_read_int(proof);
             read_literals(nb_lits);
             // forward to checker
             plrat_utils_import_unchecked(id, buf_lits->data, nb_lits);
@@ -230,7 +231,7 @@ int pc_run() {
 
         } else if (c == TRUSTED_CHK_CLS_DELETE) {
             // parse
-            const int nb_hints = trusted_utils_read_int(proof);
+            const int nb_hints = plrat_reader_read_int(proof);
             read_hints(nb_hints);
             // forward to checker
             top_check_delete(buf_hints->data, nb_hints);

@@ -7,21 +7,29 @@ void fill_buffer(struct plrat_reader* reader) {
     } else {
         read_size = reader->buffer_size;
     }
+    if (MALLOB_UNLIKELY(read_size == 0)) {
+        printf("nothing to read\n");
+        return;
+    }
     u64 objs_read = UNLOCKED_IO(fread)(reader->read_buffer, read_size, 1, reader->buffered_file);
     if (MALLOB_UNLIKELY(objs_read == 0)) {
         printf("ERROR\n");
+        printf("buffer_size: %lu\n", reader->buffer_size);
+        printf("remaining bytes: %lu\n", reader->remaining_bytes);
+        printf("read size: %lu\n", read_size);
+
     }
     reader->pos = reader->read_buffer;
     reader->end = reader->pos + read_size;
     reader->remaining_bytes -= read_size;
-    //if (reader->local_rank == 0) {
-    //    printf("read %lu bytes\n", read_size);
-    //    printf("remaining bytes: %lu\n", reader->remaining_bytes);
-    //    printf("buffer size: %lu\n", reader->buffer_size);
-    //    printf("pos: %p\n", reader->pos);
-    //    printf("end: %p\n", reader->end);
-    //    printf("read buffer: %p\n", reader->read_buffer);
-    //}
+    if (reader->local_rank == 0) {
+        printf("read %lu bytes\n", read_size);
+        printf("remaining bytes: %lu\n", reader->remaining_bytes);
+        printf("buffer size: %lu\n", reader->buffer_size);
+        printf("pos: %p\n", reader->pos);
+        printf("end: %p\n", reader->end);
+        printf("read buffer: %p\n", reader->read_buffer);
+    }
 }
 
 struct plrat_reader* plrat_reader_init(u64 buffer_size_bytes, FILE* file, int local_rank) {
@@ -38,16 +46,28 @@ struct plrat_reader* plrat_reader_init(u64 buffer_size_bytes, FILE* file, int lo
     reader->read_buffer = (char*)trusted_utils_malloc(buffer_size_bytes);
     reader->pos = reader->read_buffer;
     reader->end = reader->pos;
-    reader->fragment_buffer = *u8_vec_init(1);
+    reader->fragment_buffer.size = 0;
+    reader->fragment_buffer.capacity = 1;
+    reader->fragment_buffer.data = trusted_utils_calloc(1, sizeof(u8));
+
+    //printf("buffer size: %lu\n", reader->buffer_size);
+    //printf("remaining bytes: %lu\n", reader->remaining_bytes);
+    //printf("read buffer: %p\n", reader->read_buffer);
+    //printf("pos: %p\n", reader->pos);
+    //printf("fragment buffer: %p\n", reader->fragment_buffer.data);
+
 
     fill_buffer(reader);
 
     return reader;
 }
 
-//void plrat_read_to_buf(void* data, size_t size, size_t nb_objs, FILE* file) {
-//    u64 buffer_end = UNLOCKED_IO(fread)(data, size, nb_objs, file);
-//}
+void plrat_reader_end(struct plrat_reader* reader){
+    fclose(reader->buffered_file);
+    free(reader->fragment_buffer.data);
+    free(reader->read_buffer);
+    free(reader);
+}
 
 bool plrat_reader_check_bounds(u64 nb_bytes, struct plrat_reader* reader){
     long bytes_till_end = reader->end - reader->pos;
@@ -136,12 +156,4 @@ void plrat_reader_skip_bytes(u64 nb_bytes, struct plrat_reader* reader){
         //    printf("new pos: %p\n", reader->pos);
         //}
     }
-}
-
-void plrat_reader_end(struct plrat_reader* reader){
-    //plrat_utils_free(read_buffer);
-    fclose(reader->buffered_file);
-    free(reader->fragment_buffer.data);
-    free(reader->read_buffer);
-    free(reader);
 }

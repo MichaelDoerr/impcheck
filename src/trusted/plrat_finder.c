@@ -117,38 +117,9 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
 // }
 
 void plrat_finder_end() {
-    // struct clause current_clause;
-    // u64 current_clause_id;
-    // FILE* current_out;
-    //
-    // for (size_t i = 0; i < n_solvers; i++) {
-    //    qsort(clauses[i]->data, clauses[i]->size, sizeof(struct clause), compare_clause);
-    //
-    //    current_out = importfiles[i];
-    //    plrat_utils_write_int(clauses[i]->size, redist_strat, current_out);
-    //
-    //    for (size_t c = 0; c < clauses[i]->size; c++) {
-    //        current_clause = clauses[i]->data[c];
-    //        current_clause_id = current_clause.id;
-    //        plrat_importer_write_lrat_import_file(
-    //            current_clause_id,
-    //            &(all_lits[i]->data[current_clause.start]),
-    //            current_clause.nb_lits,
-    //            current_out);
-    //    }
-    //}
-    //
-    // for (size_t i = 0; i < n_solvers; i++) {
-    //    int_vec_free(all_lits[i]);
-    //    clause_vec_free(clauses[i]);
-    //    free(all_lits[i]);
-    //    free(clauses[i]);
-    //    fclose(importfiles[i]);
-    //}
-    // free(importfiles);
-    // free(all_lits);
-    // free(clauses);
-    // free(left_clauses);
+    plrat_reader_end(proof_reader);
+    import_merger_end();
+    int_vec_free(proof_lits);
 }
 
 void plrat_finder_run() {
