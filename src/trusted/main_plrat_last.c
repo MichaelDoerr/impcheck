@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     char output_path[512];
     snprintf(output_path, 512, "-formula-path=%s -proofs-path=%s num-solvers=%lu -solver-id=%lu -redistribution-strategy=%lu",
     formula_path, proofs_path, num_solvers, solver_id, redistribution_strategy);
-    plrat_utils_log(output_path);
+    //plrat_utils_log(output_path);
 
     plrat_finder_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
     plrat_finder_run();

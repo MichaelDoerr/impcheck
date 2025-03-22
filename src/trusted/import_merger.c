@@ -68,7 +68,6 @@ void import_merger_end() {
     for (size_t i = 0; i < _im_n_files; i++) {
         plrat_reader_end(_im_import_files[i]);
         int_vec_free(_im_all_lits[i]);
-        free(_im_import_files[i]);
     }
     free(_im_import_files);
     free(_im_all_lits);

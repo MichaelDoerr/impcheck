@@ -44,9 +44,9 @@ void skip_proof_header() {
     char c = '\0';
 
     c = plrat_reader_read_char(proof_reader);
-    //if (local_rank == 0) {
-    //    printf("char: %c\n", c);
-    //}
+    // if (local_rank == 0) {
+    //     printf("char: %c\n", c);
+    // }
     if (c == TRUSTED_CHK_INIT) {
         plrat_reader_skip_bytes(sizeof(int), proof_reader);
     } else {
@@ -54,20 +54,19 @@ void skip_proof_header() {
     }
 
     c = plrat_reader_read_char(proof_reader);
-    //if (local_rank == 0) {
-    //    printf("c: %c\n", c);
-    //}
+    // if (local_rank == 0) {
+    //     printf("c: %c\n", c);
+    // }
     while (c == TRUSTED_CHK_LOAD) {
         const int nb_lits = plrat_reader_read_int(proof_reader);
-        if (local_rank == 0) {
-            printf("nb_lits: %i\n", nb_lits);
-        }
         plrat_reader_skip_bytes(nb_lits * sizeof(int), proof_reader);
         c = plrat_reader_read_char(proof_reader);
     }
 
     if (c == TRUSTED_CHK_END_LOAD) {
-        plrat_utils_log("Header Skipped");
+        if (local_rank == 0) {
+            plrat_utils_log("Header Skipped");
+        }
     } else {
         char err_str[512];
         snprintf(err_str, 512, "Invalid END_LOAD c:%c", c);
@@ -89,7 +88,7 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     char proof_path[512];
     snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_rank);
     my_proof = fopen(proof_path, "rb");
-    proof_reader = plrat_reader_init(1 << 24, my_proof, local_rank); 
+    proof_reader = plrat_reader_init(1 << 24, my_proof, local_rank);
 
     skip_proof_header();
 
@@ -133,9 +132,9 @@ void plrat_finder_run() {
             if (c == TRUSTED_CHK_CLS_PRODUCE) {
                 // parse
                 u64 id = plrat_reader_read_ul(proof_reader);
-                //if (local_rank == 0) {
-                //    printf("id: %lu\n", id);
-                //}
+                // if (local_rank == 0) {
+                //     printf("id: %lu\n", id);
+                // }
                 const int nb_lits = plrat_reader_read_int(proof_reader);
                 int nb_hints;
                 // skip line
