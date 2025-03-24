@@ -106,7 +106,7 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
         }
 
         //plrat_utils_log(proof_path);
-        importfiles[i] = fopen(proof_path, "w");
+        importfiles[i] = fopen(proof_path, "wb");
         if (i != local_rank) {
             all_lits[i] = int_vec_init(1024);
             clauses[i] = clause_vec_init(1024);

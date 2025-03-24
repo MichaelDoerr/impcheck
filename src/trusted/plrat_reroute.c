@@ -64,7 +64,7 @@ u64 plrat_reroute_get_destination_rank(size_t id) {
     return plrat_utils_2d_to_rank(x, y, comm_size);
 }
 
-void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsigned long num_solvers, unsigned long redistribution_strategy) {
+void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsigned long num_solvers, unsigned long redistribution_strategy, unsigned long read_buffer_size) {
     redist_strat = redistribution_strategy;
     n_solvers = num_solvers;
     root_n = sqrt((double)num_solvers);
@@ -97,7 +97,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         if (local_rank == 6) plrat_utils_log(file_paths[i]);
         
     }
-    import_merger_init(comm_size, file_paths, &_re_current_ID, &_re_current_literals_data, &_re_current_literals_size);
+    import_merger_init(comm_size, file_paths, &_re_current_ID, &_re_current_literals_data, &_re_current_literals_size, read_buffer_size);
 
     // free
     for (size_t i = 0; i < comm_size; i++) {

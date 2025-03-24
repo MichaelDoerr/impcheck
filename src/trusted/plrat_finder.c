@@ -74,7 +74,7 @@ void skip_proof_header() {
     }
 }
 
-void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
+void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy, unsigned long read_buffer_size) {
     redist_strat = redistribution_strategy;
     n_solvers = num_solvers;
     root_n = sqrt((double)num_solvers);
@@ -88,7 +88,7 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     char proof_path[512];
     snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_rank);
     my_proof = fopen(proof_path, "rb");
-    proof_reader = plrat_reader_init(1 << 24, my_proof, local_rank);
+    proof_reader = plrat_reader_init(read_buffer_size, my_proof, local_rank);
 
     skip_proof_header();
 
@@ -99,7 +99,7 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
         snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_import", out_path, local_rank, i);
     }
 
-    import_merger_init(comm_size, file_paths, &current_ID, &current_literals_data, &current_literals_size);
+    import_merger_init(comm_size, file_paths, &current_ID, &current_literals_data, &current_literals_size, read_buffer_size);
 
     // free
     for (size_t i = 0; i < comm_size; i++) {

@@ -165,14 +165,14 @@ bool pc_load_from_file(FILE* formular) {
     return no_error;
 }
 
-void pc_init(const char* formula_path, const char* proofs_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
+void pc_init(const char* formula_path, const char* proofs_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy, unsigned long read_buffer_size) {
     char proof_path[512];
     FILE* formular;
     snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
 
     FILE* proof_stream = fopen(proof_path, "r");
     if (!proof_stream) trusted_utils_exit_eof();
-    proof = plrat_reader_init(1 << 24, proof_stream, solver_id);
+    proof = plrat_reader_init(read_buffer_size, proof_stream, solver_id);
     formular = fopen(formula_path, "r");
     if (!formular) trusted_utils_exit_eof();
     UNUSED(formula_path);

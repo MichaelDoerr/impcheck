@@ -39,7 +39,7 @@ void copy_lits(int* dest, int* src, int nb_lits) {
     }
 }
 
-void import_merger_init(int count_input_files, char** file_paths, u64* current_id, int** current_literals_data, u64* current_literals_size) {
+void import_merger_init(int count_input_files, char** file_paths, u64* current_id, int** current_literals_data, u64* current_literals_size, u64 read_buffer_size) {
     _im_n_files = count_input_files;
     _im_current_id = current_id;              // output location
     _im_current_literals_data = current_literals_data;  // output location
@@ -51,7 +51,7 @@ void import_merger_init(int count_input_files, char** file_paths, u64* current_i
     for (size_t i = 0; i < _im_n_files; i++) {
         // plrat_utils_log(file_paths[i]);
         
-        _im_import_files[i] = plrat_reader_init(1 << 24, fopen(file_paths[i], "r"), -1);
+        _im_import_files[i] = plrat_reader_init(read_buffer_size, fopen(file_paths[i], "rb"), -1);
         if (!(_im_import_files[i])) trusted_utils_exit_eof();
         _im_all_lits[i] = int_vec_init(1);
         _im_left_clauses[i] = plrat_reader_read_int(_im_import_files[i]);
