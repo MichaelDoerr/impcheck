@@ -70,9 +70,7 @@ void plrat_reader_end(struct plrat_reader* reader){
 }
 
 bool plrat_reader_check_bounds(u64 nb_bytes, struct plrat_reader* reader){
-    if (nb_bytes == 3408){
-        printf()
-    }
+    
     long bytes_till_end = reader->end - reader->pos;
     if (MALLOB_UNLIKELY(bytes_till_end == 0)){
         fill_buffer(reader);
