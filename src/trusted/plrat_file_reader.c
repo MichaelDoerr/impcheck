@@ -22,6 +22,12 @@ void fill_buffer(struct plrat_reader* reader) {
     reader->pos = reader->read_buffer;
     reader->end = reader->pos + read_size;
     reader->remaining_bytes -= read_size;
+    //printf("reader->pos: %p\n", reader->pos);
+    //printf("reader->end: %p\n", reader->end);
+    //printf("reader->remaining_bytes: %lu\n", reader->remaining_bytes);
+    //printf("remaining bytes: %lu\n", reader->remaining_bytes);
+    //printf("read size: %lu\n", read_size);
+
     //if (reader->local_rank == 0) {
     //    printf("read %lu bytes\n", read_size);
     //    printf("remaining bytes: %lu\n", reader->remaining_bytes);
@@ -72,10 +78,11 @@ void plrat_reader_end(struct plrat_reader* reader){
 bool plrat_reader_check_bounds(u64 nb_bytes, struct plrat_reader* reader){
     
     long bytes_till_end = reader->end - reader->pos;
+    
     if (MALLOB_UNLIKELY(bytes_till_end == 0)){
         fill_buffer(reader);
-        return true;
     }
+    bytes_till_end = reader->end - reader->pos;
     if(((long)nb_bytes) > bytes_till_end){
         u8_vec_resize(&reader->fragment_buffer, nb_bytes);
         memcpy(reader->fragment_buffer.data, reader->pos, bytes_till_end); // put first part of the data in the fragment buffer
@@ -131,13 +138,13 @@ u64  plrat_reader_read_ul(struct plrat_reader* reader){
     return res;
 }
 void plrat_reader_read_uls(u64* data, u64 nb_uls, struct plrat_reader* reader){
-    printf("reading uls\n");
-    printf("nb_uls: %lu\n", nb_uls);
-    printf("reader->pos: %p\n", reader->pos);
+    //printf("reading uls\n");
+    //printf("nb_uls: %lu\n", nb_uls);
+    //printf("reader->pos: %p\n", reader->pos);
     if (plrat_reader_check_bounds(nb_uls * sizeof(u64), reader)){
-        printf("data: %p\n", (void*)data);
-        printf("reader->pos: %p\n", (void*)reader->pos);
-        printf("nb_uls * sizeof(u64): %lu\n", nb_uls * sizeof(u64));
+        //printf("data: %p\n", (void*)data);
+        //printf("reader->pos: %p\n", (void*)reader->pos);
+        //printf("nb_uls * sizeof(u64): %lu\n", nb_uls * sizeof(u64));
 
         memcpy(data, reader->pos, nb_uls * sizeof(u64));
         reader->pos += nb_uls * sizeof(u64);
@@ -160,8 +167,8 @@ void plrat_reader_skip_bytes(u64 nb_bytes, struct plrat_reader* reader){
     
     long bytes_till_end = reader->end - reader->pos;
     
-    printf("bytes till end: %lu\n", bytes_till_end);
-    printf("skipped %lu bytes\n", nb_bytes);
+    //printf("bytes till end: %lu\n", bytes_till_end);
+    //printf("skipped %lu bytes\n", nb_bytes);
     
     while (MALLOB_UNLIKELY(bytes_till_end <= (long)nb_bytes)){ // reader has reached the end of the buffer
         fill_buffer(reader);
