@@ -3,6 +3,7 @@
 #include <stdbool.h>  // for bool, true, false
 #include <stdio.h>    // for fclose, fflush_unlocked, fopen, snprintf
 #include <stdlib.h>   // for free
+#include <sys/stat.h> // for mkdir
 #include <time.h>     // for clock, CLOCKS_PER_SEC, clock_t
 #include <math.h>     // for sqrt
 
@@ -92,17 +93,28 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     importfiles = trusted_utils_malloc(sizeof(FILE*) * comm_size);
     if(local_rank == 0) {
         char msg[512];
-        snprintf(msg, 512, "root_n:%f", root_n);
+        snprintf(msg, 512, "comm_size: %ld\n", comm_size);
         plrat_utils_log(msg);
     }
 
 
     for (size_t i = 0; i < comm_size; i++) {
         char proof_path[512];
+        char proof_folder[512];
+        u64 proxy_rank = plrat_importer_get_proxy_rank(i);
         if(redist_strat == 2) {
-            snprintf(proof_path, 512, "%s/%lu/%lu.plrat_proxy", out_path, plrat_importer_get_proxy_rank(i), plrat_utils_rank_to_x(local_rank, comm_size));
+            snprintf(proof_folder, 512, "%s/%lu", out_path, proxy_rank);
         } else {
-            snprintf(proof_path, 512, "%s/%lu/%lu.plrat_import", out_path, i, local_rank);
+            snprintf(proof_folder, 512, "%s/%lu", out_path, i);
+        }
+        if (proxy_rank > num_solvers - 1){
+            mkdir(proof_folder, 0755);
+        }
+        
+        if(redist_strat == 2) {
+            snprintf(proof_path, 512, "%s/%lu.plrat_proxy", proof_folder, plrat_utils_rank_to_x(local_rank, comm_size));
+        } else {
+            snprintf(proof_path, 512, "%s/%lu.plrat_import", proof_folder, local_rank);
         }
 
         //plrat_utils_log(proof_path);

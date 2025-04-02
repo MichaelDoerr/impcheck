@@ -4,6 +4,9 @@
         "plrat_reroute.h": "c",
         "stdbool.h": "c",
         "trusted_utils.h": "c",
-        "array": "c"
+        "array": "c",
+        "clause.h": "c",
+        "checker_interface.h": "c",
+        "time.h": "c"
     }
 }
