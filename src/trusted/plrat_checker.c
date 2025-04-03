@@ -206,9 +206,12 @@ int pc_run() {
         if (c == TRUSTED_CHK_CLS_PRODUCE) {
             // parse
             u64 id = plrat_reader_read_ul(proof);
+            //printf("produce %lu\n", id);
             const int nb_lits = plrat_reader_read_int(proof);
+            //printf("nb lits %d\n", nb_lits);
             read_literals(nb_lits);
             const int nb_hints = plrat_reader_read_int(proof);
+            //printf("nb hints %d\n", nb_hints);
             read_hints(nb_hints);
             // forward to checker
             top_check_produce(id, buf_lits->data, nb_lits,
