@@ -15,10 +15,10 @@ struct plrat_reader{
     int local_rank;
     char* read_buffer;
     struct u8_vec fragment_buffer;
-    u64 buffer_size;
+    long buffer_size;
     char* pos;
     char* end;
-    u64 remaining_bytes; // starts as filesize
+    long remaining_bytes; // starts as filesize
     FILE* buffered_file;
 };
 

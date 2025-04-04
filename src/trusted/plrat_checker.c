@@ -96,7 +96,7 @@ bool pc_load() {
         c = plrat_reader_read_char(proof);
     }
 
-    if (c == TRUSTED_CHK_END_LOAD) {
+    if (c == TRUSTED_CHK_END_LOAD || c == TRUSTED_CHK_TERMINATE) {
         top_check_end_load();
         pc_nb_loaded_clauses = top_check_get_nb_loaded_clauses();
         char log_str[512];
@@ -190,10 +190,10 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
 
 void pc_end() {
     plrat_importer_end();
-    top_check_end();
     int_vec_free(buf_lits);
     u64_vec_free(buf_hints);
     plrat_reader_end(proof);
+    top_check_end();
 }
 
 int pc_run() {

@@ -75,12 +75,12 @@ void tc_init(const char* fifo_in, const char* fifo_out, u64 num_solvers, u64 glo
 }
 
 void tc_end() {
-    top_check_end();
     free(buf_hints);
     free(buf_lits);
     fclose(output);
     fclose(input);
     plrat_utils_end_debug();
+    top_check_end();
 }
 
 int tc_run(bool check_model, bool lenient) {
@@ -177,9 +177,9 @@ int tc_run(bool check_model, bool lenient) {
 #if IMPCHECK_PLRAT
             trusted_utils_write_lrat_load(TRUSTED_CHK_LOAD, buf_lits->data, nb_lits);
             
-            char o[512];
-            snprintf(o, 512, "LOAD nb_lits:%i", nb_lits);
-            trusted_utils_log(o);
+            //char o[512];
+            //snprintf(o, 512, "LOAD nb_lits:%i", nb_lits);
+            //trusted_utils_log(o);
 #endif
 
         } else if (c == TRUSTED_CHK_INIT) {
@@ -250,9 +250,6 @@ int tc_run(bool check_model, bool lenient) {
         }
     }
 
-#if IMPCHECK_PLRAT
-    hash_table_free(id_offsets);
-#endif
     float elapsed = (float) (clock() - start) / CLOCKS_PER_SEC;
     snprintf(trusted_utils_msgstr, 512, "cpu:%.3f prod:%lu imp:%lu del:%lu n_s:%lu", elapsed, nb_produced, nb_imported, nb_deleted, nb_solvers);
     trusted_utils_log(trusted_utils_msgstr);
