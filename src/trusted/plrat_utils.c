@@ -56,9 +56,9 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
     new_id = old_id + new_offset + solver_modulo_remainder;
     //plrat_utils_debug('b', old_id, new_id);
 
-    char msgstr2[512] = "";
-    snprintf(msgstr2, 512, "bigger offset! new_id:%lu jump_offset:%lu new_offset:%lu htsize:%lu", new_id, new_offset - *offset, new_offset, id_offsets->capacity);
-    trusted_utils_log(msgstr2);
+    //char msgstr2[512] = "";
+    //snprintf(msgstr2, 512, "bigger offset! new_id:%lu jump_offset:%lu new_offset:%lu htsize:%lu", new_id, new_offset - *offset, new_offset, id_offsets->capacity);
+    //trusted_utils_log(msgstr2);
 
     assert(new_offset > *offset);
     *offset = new_offset;
