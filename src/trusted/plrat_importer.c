@@ -69,7 +69,7 @@ void plrat_importer_write_int(int value, FILE* current_out) {
 }
 
 u64 plrat_importer_get_proxy_rank(size_t id) {
-    u64 x = plrat_utils_rank_to_x(id, comm_size);
+    u64 x = plrat_utils_rank_to_x(id % n_solvers, comm_size);
     u64 y = plrat_utils_rank_to_y(local_rank, comm_size);
     return plrat_utils_2d_to_rank(x, y, comm_size);
 }
@@ -171,7 +171,7 @@ void plrat_importer_end() {
 
 void plrat_importer_log(unsigned long id, const int* literals, int nb_literals) {
     struct clause _clause;
-    int file_id = plrat_utils_rank_to_x(id, comm_size);
+    int file_id = plrat_utils_rank_to_x(id % n_solvers, comm_size);
     _clause.id = id;
     _clause.nb_lits = nb_literals;
     _clause.start = all_lits[file_id]->size;

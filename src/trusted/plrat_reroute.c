@@ -7,6 +7,7 @@
 #include <stdio.h>    // for fclose, fflush_unlocked, fopen, snprintf
 #include <stdlib.h>   // for free
 #include <time.h>     // for clock, CLOCKS_PER_SEC, clock_t
+#include <unistd.h>   // for access
 
 #include "checker_interface.h"
 #include "clause.h"
@@ -77,6 +78,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
     _re_output_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
     _re_count_clauses = trusted_utils_calloc(comm_size, sizeof(u64));
     char msg[512];
+    printf("local rank: %lu, num solvers: %lu\n", local_rank, n_solvers);
     snprintf(msg, 512, "root_n:%f", root_n);
     if (local_rank == 0) plrat_utils_log(msg);
     for (size_t i = 0; i < comm_size; i++) {
@@ -94,6 +96,13 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
     for (size_t i = 0; i < comm_size; i++) {
         file_paths[i] = trusted_utils_malloc(512);
         snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_proxy", out_path, local_rank, i);
+        if (access(file_paths[i], F_OK) != 0) {
+            // file doesn't exist
+            // create placeholder file containing only 0
+            FILE* f = fopen(file_paths[i], "w");
+            trusted_utils_write_int(0, f); // write placeholder 0 for count of clauses
+            fclose(f);
+        }
         if (local_rank == 6) plrat_utils_log(file_paths[i]);
         
     }
@@ -128,10 +137,10 @@ void plrat_reroute_run() {
     while (true) {
         import_merger_next();
         int destination_index = plrat_utils_rank_to_y(_re_current_ID % n_solvers, comm_size);
-        //if (local_rank == 0) {
-        //    snprintf(msg, 512, "current_ID:%lu destination_index:%i", _re_current_ID, destination_index);
-        //    plrat_utils_log(msg);
-        //}
+        if (2241 == _re_current_ID) {
+            snprintf(msg, 512, "myID:%li current_ID:%lu destination_index:%i x:%li", local_rank, _re_current_ID, destination_index, plrat_utils_rank_to_x(_re_current_ID % n_solvers, comm_size));
+            plrat_utils_log(msg);
+        }
         if (MALLOB_UNLIKELY(_re_current_ID == empty_ID)) break;
         
         plrat_reroute_write_lrat_import_file(
