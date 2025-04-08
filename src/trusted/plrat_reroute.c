@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <math.h>     // for sqrt
 #include <stdbool.h>  // for bool, true, false
+#include <sys/stat.h> // for mkdir
 #include <stdio.h>    // for fclose, fflush_unlocked, fopen, snprintf
 #include <stdlib.h>   // for free
 #include <time.h>     // for clock, CLOCKS_PER_SEC, clock_t
@@ -83,10 +84,13 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
     if (local_rank == 0) plrat_utils_log(msg);
     for (size_t i = 0; i < comm_size; i++) {
         char tmp_path[512];
+        char folder_path[512];
 
-        snprintf(tmp_path, 512, "%s/%lu/%lu.plrat_import", out_path, plrat_reroute_get_destination_rank(i), plrat_utils_rank_to_y(local_rank, comm_size));
+        snprintf(folder_path, 512, "%s/%lu", out_path, plrat_reroute_get_destination_rank(i));
+        mkdir(folder_path, 0755);
+        snprintf(tmp_path, 512, "%s/%lu.plrat_import", folder_path, plrat_utils_rank_to_y(local_rank, comm_size));
         if (local_rank == 6) plrat_utils_log(tmp_path);
-        _re_output_files[i] = fopen(tmp_path, "w");
+        _re_output_files[i] = fopen(tmp_path, "w"); // TODO Fix for n = 6
 
         if (!(_re_output_files[i])) trusted_utils_exit_eof();
         plrat_reroute_write_int(0, _re_output_files[i]); // write placeholder 0 for count of clauses
