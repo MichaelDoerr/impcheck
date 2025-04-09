@@ -8,6 +8,7 @@
         "clause.h": "c",
         "checker_interface.h": "c",
         "time.h": "c",
-        "plrat_file_reader.h": "c"
+        "plrat_file_reader.h": "c",
+        "stdlib.h": "c"
     }
 }
