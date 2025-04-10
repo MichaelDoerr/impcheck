@@ -14,6 +14,8 @@
 #include "plrat_checker.h"
 #include "plrat_file_reader.h"
 #include "plrat_utils.h"
+#include "siphash_cls.h"
+#include "secret.h"
 
 const char* out_path;  // named pipe
 u64 n_solvers;         // number of solvers
@@ -23,6 +25,7 @@ u64 redist_strat;  // redistribution_strategy
 u64 local_rank;    // solver id
 FILE* my_proof;
 const u64 empty_ID = -1;
+struct siphash* clause_hash;
 
 // Buffering.
 struct int_vec** all_lits;
@@ -88,6 +91,8 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     char proof_path[512];
     snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_rank);
     my_proof = fopen(proof_path, "rb");
+    
+    clause_hash = siphash_cls_init(SECRET_KEY);
     proof_reader = plrat_reader_init(read_buffer_size, my_proof, local_rank);
 
     skip_proof_header();
@@ -122,10 +127,11 @@ void plrat_finder_end() {
 }
 
 void plrat_finder_run() {
-    while (true) {
+    bool found_T = false;
+    while (!found_T) {
         import_merger_next();
 
-        if (current_ID == empty_ID) break;
+        //if (current_ID == empty_ID) break;
 
         while (true) {
             int c = plrat_reader_read_char(proof_reader);
@@ -135,6 +141,8 @@ void plrat_finder_run() {
                 // if (local_rank == 0) {
                 //     printf("id: %lu\n", id);
                 // }
+                
+                siphash_cls_update(clause_hash, (u8*)&id, sizeof(u64));
                 const int nb_lits = plrat_reader_read_int(proof_reader);
                 int nb_hints;
                 // skip line
@@ -190,6 +198,16 @@ void plrat_finder_run() {
                 plrat_reader_skip_bytes(nb_hints * sizeof(u64), proof_reader);
 
             } else if (c == TRUSTED_CHK_TERMINATE) {
+                const u8* sig_res_computed = siphash_cls_digest(clause_hash);
+                const u8 sig_res_reported[16];
+                plrat_reader_read_ints((int*)sig_res_reported, 4, proof_reader);
+                if (!trusted_utils_equal_signatures(sig_res_computed, sig_res_reported)) {
+                    trusted_utils_log_err("Signature does not match!");
+                } else {
+                    trusted_utils_log("Signature matches!");
+                }
+                siphash_cls_free(clause_hash);
+                found_T = true;
                 break;
 
             } else {
