@@ -144,17 +144,18 @@ void plrat_finder_run() {
                 
                 siphash_cls_update(clause_hash, (u8*)&id, sizeof(u64));
                 const int nb_lits = plrat_reader_read_int(proof_reader);
+                // TODO: ALWAYS read lits for siphash_cls_update
+                read_literals(nb_lits);
+                siphash_cls_update(clause_hash, (u8*)proof_lits->data, nb_lits);
                 int nb_hints;
                 // skip line
                 if (id < current_ID) {
-                    plrat_reader_skip_bytes(nb_lits * sizeof(int), proof_reader);
                     nb_hints = plrat_reader_read_int(proof_reader);
                     plrat_reader_skip_bytes(nb_hints * sizeof(u64), proof_reader);
                     continue;
                 }
                 // check if the clause is the same
                 if (id == current_ID) {
-                    read_literals(nb_lits);
                     nb_hints = plrat_reader_read_int(proof_reader);
                     plrat_reader_skip_bytes(nb_hints * sizeof(u64), proof_reader);
                     if (plrat_utils_compare_lits(current_literals_data, proof_lits->data, current_literals_size, nb_lits)) {

@@ -223,7 +223,7 @@ int pc_run() {
             top_check_produce(id, buf_lits->data, nb_lits,
                               buf_hints->data, nb_hints);
             nb_produced++;
-            // siphash_cls_update(clause_hash, (u8*)buf_lits->data, nb_lits);
+            siphash_cls_update(clause_hash, (u8*)buf_lits->data, nb_lits);
 
         } else if (c == TRUSTED_CHK_CLS_IMPORT) {
             // parse
