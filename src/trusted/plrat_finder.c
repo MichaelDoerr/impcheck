@@ -14,8 +14,8 @@
 #include "plrat_checker.h"
 #include "plrat_file_reader.h"
 #include "plrat_utils.h"
-#include "siphash_cls.h"
 #include "secret.h"
+#include "siphash_cls.h"
 
 const char* out_path;  // named pipe
 u64 n_solvers;         // number of solvers
@@ -91,7 +91,7 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     char proof_path[512];
     snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_rank);
     my_proof = fopen(proof_path, "rb");
-    
+
     clause_hash = siphash_cls_init(SECRET_KEY);
     proof_reader = plrat_reader_init(read_buffer_size, my_proof, local_rank);
 
@@ -131,7 +131,7 @@ void plrat_finder_run() {
     while (!found_T) {
         import_merger_next();
 
-        //if (current_ID == empty_ID) break;
+        // if (current_ID == empty_ID) break;
 
         while (true) {
             int c = plrat_reader_read_char(proof_reader);
@@ -141,12 +141,12 @@ void plrat_finder_run() {
                 // if (local_rank == 0) {
                 //     printf("id: %lu\n", id);
                 // }
-                
+
                 siphash_cls_update(clause_hash, (u8*)&id, sizeof(u64));
                 const int nb_lits = plrat_reader_read_int(proof_reader);
                 // TODO: ALWAYS read lits for siphash_cls_update
                 read_literals(nb_lits);
-                siphash_cls_update(clause_hash, (u8*)proof_lits->data, nb_lits);
+                siphash_cls_update(clause_hash, (u8*)proof_lits->data, nb_lits * sizeof(int));
                 int nb_hints;
                 // skip line
                 if (id < current_ID) {
@@ -205,7 +205,9 @@ void plrat_finder_run() {
                 if (!trusted_utils_equal_signatures(sig_res_computed, sig_res_reported)) {
                     trusted_utils_log_err("Signature does not match!");
                 } else {
-                    trusted_utils_log("Signature matches!");
+                    char msg[512];
+                    snprintf(msg, 512, "Signature matches in local rank: %lu", local_rank);
+                    trusted_utils_log(msg);
                 }
                 siphash_cls_free(clause_hash);
                 found_T = true;
