@@ -199,6 +199,7 @@ void pc_end() {
     u64_vec_free(buf_hints);
     plrat_reader_end(proof);
     top_check_end();
+    siphash_cls_free(clause_hash);
 }
 
 int pc_run() {
@@ -252,8 +253,6 @@ int pc_run() {
             if (left_bytes > 0) fseek(proof->buffered_file, -left_bytes, SEEK_CUR);
             
             trusted_utils_write_sig(sig, proof->buffered_file);
-            siphash_cls_free(clause_hash);
-
             break;
 
         } else {
