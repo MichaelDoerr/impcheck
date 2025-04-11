@@ -2,20 +2,22 @@
 #include "plrat_reroute.h"
 
 #include <assert.h>
-#include <math.h>     // for sqrt
-#include <stdbool.h>  // for bool, true, false
-#include <sys/stat.h> // for mkdir
-#include <stdio.h>    // for fclose, fflush_unlocked, fopen, snprintf
-#include <stdlib.h>   // for free
-#include <time.h>     // for clock, CLOCKS_PER_SEC, clock_t
-#include <unistd.h>   // for access
+#include <math.h>      // for sqrt
+#include <stdbool.h>   // for bool, true, false
+#include <stdio.h>     // for fclose, fflush_unlocked, fopen, snprintf
+#include <stdlib.h>    // for free
+#include <sys/stat.h>  // for mkdir
+#include <time.h>      // for clock, CLOCKS_PER_SEC, clock_t
+#include <unistd.h>    // for access
 
 #include "checker_interface.h"
 #include "clause.h"
 #include "hash.h"
+#include "import_merger.h"
 #include "plrat_checker.h"  // for trusted_utils_read_int, trusted_utils_log...
 #include "plrat_utils.h"
-#include "import_merger.h"
+#include "secret.h"
+#include "siphash_cls.h"
 #include "top_check.h"  // for top_check_commit_formula_sig, top_check_d...
 
 const char* out_path;  // named pipe
@@ -23,7 +25,7 @@ u64 n_solvers;         // number of solvers
 double root_n;         // square root of number of solvers
 size_t comm_size;
 u64 redist_strat;  // redistribution_strategy
-u64 local_rank;      // solver id
+u64 local_rank;    // solver id
 const u64 empty_ID = -1;
 
 // Buffering.
@@ -32,6 +34,7 @@ u64 _re_current_literals_size;
 u64 _re_current_ID = empty_ID;
 u64* _re_count_clauses;
 FILE** _re_output_files;
+struct siphash** out_hash;
 
 void plrat_reroute_write_lrat_import_file(u64 clause_id, int* literals, int nb_literals, FILE* current_out) {
     if (redist_strat == 0) {
@@ -78,8 +81,9 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
     local_rank = solver_rank;
     _re_output_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
     _re_count_clauses = trusted_utils_calloc(comm_size, sizeof(u64));
+    out_hash = trusted_utils_malloc(sizeof(struct siphash*) * comm_size);
+    // printf("local rank: %lu, num solvers: %lu\n", local_rank, n_solvers);
     char msg[512];
-    printf("local rank: %lu, num solvers: %lu\n", local_rank, n_solvers);
     snprintf(msg, 512, "root_n:%f", root_n);
     if (local_rank == 0) plrat_utils_log(msg);
     for (size_t i = 0; i < comm_size; i++) {
@@ -89,11 +93,12 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         snprintf(folder_path, 512, "%s/%lu", out_path, plrat_reroute_get_destination_rank(i));
         mkdir(folder_path, 0755);
         snprintf(tmp_path, 512, "%s/%lu.plrat_import", folder_path, plrat_utils_rank_to_y(local_rank, comm_size));
-        if (local_rank == 6) plrat_utils_log(tmp_path);
-        _re_output_files[i] = fopen(tmp_path, "w"); // TODO Fix for n = 6
+        _re_output_files[i] = fopen(tmp_path, "w");
 
         if (!(_re_output_files[i])) trusted_utils_exit_eof();
-        plrat_reroute_write_int(0, _re_output_files[i]); // write placeholder 0 for count of clauses
+        plrat_reroute_write_int(0, _re_output_files[i]);  // write placeholder 0 for count of clauses
+
+        out_hash[i] = siphash_cls_init(SECRET_KEY);
     }
     char** file_paths = trusted_utils_malloc(sizeof(char*) * comm_size);
 
@@ -104,11 +109,10 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
             // file doesn't exist
             // create placeholder file containing only 0
             FILE* f = fopen(file_paths[i], "w");
-            trusted_utils_write_int(0, f); // write placeholder 0 for count of clauses
+            trusted_utils_write_int(0, f);  // write placeholder 0 for count of clauses
             fclose(f);
         }
         if (local_rank == 6) plrat_utils_log(file_paths[i]);
-        
     }
     import_merger_init(comm_size, file_paths, &_re_current_ID, &_re_current_literals_data, &_re_current_literals_size, read_buffer_size);
 
@@ -126,14 +130,20 @@ int compare_clause(const void* a, const void* b) {
 }
 
 void plrat_reroute_end() {
-
     for (size_t i = 0; i < comm_size; i++) {
+        u8* sig = siphash_cls_digest(out_hash[i]);
+        trusted_utils_write_sig(sig, _re_output_files[i]);
+
         fseek(_re_output_files[i], 0, SEEK_SET);
         plrat_reroute_write_int(_re_count_clauses[i], _re_output_files[i]);
         fclose(_re_output_files[i]);
+        siphash_cls_free(out_hash[i]);
+        free(out_hash[i]);
     }
+    free(out_hash);
     free(_re_count_clauses);
     free(_re_output_files);
+    import_merger_end();
 }
 
 void plrat_reroute_run() {
@@ -146,7 +156,10 @@ void plrat_reroute_run() {
             plrat_utils_log(msg);
         }
         if (MALLOB_UNLIKELY(_re_current_ID == empty_ID)) break;
-        
+
+        siphash_cls_update(out_hash[destination_index], (u8*)&_re_current_ID, sizeof(u64));
+        siphash_cls_update(out_hash[destination_index], (u8*)_re_current_literals_data, sizeof(int) * _re_current_literals_size);
+
         plrat_reroute_write_lrat_import_file(
             _re_current_ID,
             _re_current_literals_data,
@@ -154,8 +167,6 @@ void plrat_reroute_run() {
             _re_output_files[destination_index]);
 
         _re_count_clauses[destination_index] += 1;
-
-
     }
     snprintf(msg, 512, "Done local_rank=%lu", local_rank);
     plrat_utils_log(msg);
