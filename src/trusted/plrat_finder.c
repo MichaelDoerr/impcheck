@@ -25,7 +25,8 @@ u64 redist_strat;  // redistribution_strategy
 u64 local_rank;    // solver id
 FILE* my_proof;
 const u64 empty_ID = -1;
-struct siphash* clause_hash;
+struct siphash* proof_check_hash;
+//struct siphash** import_check_hash;
 
 // Buffering.
 struct int_vec** all_lits;
@@ -92,7 +93,7 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_rank);
     my_proof = fopen(proof_path, "rb");
 
-    clause_hash = siphash_cls_init(SECRET_KEY);
+    proof_check_hash = siphash_cls_init(SECRET_KEY);
     proof_reader = plrat_reader_init(read_buffer_size, my_proof, local_rank);
 
     skip_proof_header();
@@ -142,11 +143,11 @@ void plrat_finder_run() {
                 //     printf("id: %lu\n", id);
                 // }
 
-                siphash_cls_update(clause_hash, (u8*)&id, sizeof(u64));
+                siphash_cls_update(proof_check_hash, (u8*)&id, sizeof(u64));
                 const int nb_lits = plrat_reader_read_int(proof_reader);
                 // TODO: ALWAYS read lits for siphash_cls_update
                 read_literals(nb_lits);
-                siphash_cls_update(clause_hash, (u8*)proof_lits->data, nb_lits * sizeof(int));
+                siphash_cls_update(proof_check_hash, (u8*)proof_lits->data, nb_lits * sizeof(int));
                 int nb_hints;
                 // skip line
                 if (id < current_ID) {
@@ -199,7 +200,7 @@ void plrat_finder_run() {
                 plrat_reader_skip_bytes(nb_hints * sizeof(u64), proof_reader);
 
             } else if (c == TRUSTED_CHK_TERMINATE) {
-                const u8* sig_res_computed = siphash_cls_digest(clause_hash);
+                const u8* sig_res_computed = siphash_cls_digest(proof_check_hash);
                 const u8 sig_res_reported[16];
                 plrat_reader_read_ints((int*)sig_res_reported, 4, proof_reader);
                 if (!trusted_utils_equal_signatures(sig_res_computed, sig_res_reported)) {
@@ -209,7 +210,7 @@ void plrat_finder_run() {
                     snprintf(msg, 512, "Signature matches in local rank: %lu", local_rank);
                     trusted_utils_log(msg);
                 }
-                siphash_cls_free(clause_hash);
+                siphash_cls_free(proof_check_hash);
                 found_T = true;
                 break;
 
