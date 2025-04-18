@@ -29,6 +29,10 @@ void load_clause_if_available(int index) {
         int nb_lits = plrat_reader_read_int(file);
         read_literals_index(index, nb_lits);
         _im_left_clauses[index] -= 1;
+        if (_im_check_hash != NULL) {
+            siphash_cls_update(_im_check_hash[index], (const u8*)&_im_clause_ids[index], sizeof(u64));
+            siphash_cls_update(_im_check_hash[index], (const u8*)_im_all_lits[index]->data, _im_all_lits[index]->size * sizeof(int));
+        }
     } else {
         _im_clause_ids[index] = -1;
     }
@@ -102,10 +106,6 @@ void import_merger_next() {
                 snprintf(err_str, 512, "literals do not match \nID:%lu index_to_load:%lu i:%lu", current_id, index_to_load, i);
                 plrat_utils_log_err(err_str);
                 exit(1);
-            }
-            if (_im_check_hash != NULL) {
-                siphash_cls_update(_im_check_hash[index_to_load], (const u8*)&current_id, sizeof(u64));
-                siphash_cls_update(_im_check_hash[index_to_load], (const u8*)candidate_lits.data, candidate_lits.size * sizeof(int));
             }
             load_clause_if_available(i);
         }
