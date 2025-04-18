@@ -8,6 +8,7 @@ int* _im_left_clauses;
 u64* _im_clause_ids;
 struct int_vec** _im_all_lits;
 struct plrat_reader** _im_import_files;
+struct siphash** _im_check_hash;
 int last_index_to_load = 0;
 // Buffering.
 
@@ -39,8 +40,9 @@ void copy_lits(int* dest, int* src, int nb_lits) {
     }
 }
 
-void import_merger_init(int count_input_files, char** file_paths, u64* current_id, int** current_literals_data, u64* current_literals_size, u64 read_buffer_size) {
+void import_merger_init(int count_input_files, char** file_paths, u64* current_id, int** current_literals_data, u64* current_literals_size, u64 read_buffer_size, struct siphash** import_check_hash) {
     _im_n_files = count_input_files;
+    _im_check_hash = import_check_hash;
     _im_current_id = current_id;              // output location
     _im_current_literals_data = current_literals_data;  // output location
     _im_current_literals_size = current_literals_size;  // output location
@@ -101,6 +103,10 @@ void import_merger_next() {
                 plrat_utils_log_err(err_str);
                 exit(1);
             }
+            if (_im_check_hash != NULL) {
+                siphash_cls_update(_im_check_hash[index_to_load], (const u8*)&current_id, sizeof(u64));
+                siphash_cls_update(_im_check_hash[index_to_load], (const u8*)candidate_lits.data, candidate_lits.size * sizeof(int));
+            }
             load_clause_if_available(i);
         }
     }
@@ -120,4 +126,8 @@ void import_merger_next() {
     *_im_current_id = current_id;
     last_index_to_load = index_to_load;
     
+}
+
+void import_merger_read_sig(int* sig_res_reported, int index) {
+    plrat_reader_read_ints(sig_res_reported, 4, _im_import_files[index]);
 }

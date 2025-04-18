@@ -26,7 +26,7 @@ u64 local_rank;    // solver id
 FILE* my_proof;
 const u64 empty_ID = -1;
 struct siphash* proof_check_hash;
-//struct siphash** import_check_hash;
+struct siphash** import_check_hash;
 
 // Buffering.
 struct int_vec** all_lits;
@@ -99,13 +99,16 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     skip_proof_header();
 
     char** file_paths = trusted_utils_malloc(sizeof(char*) * comm_size);
+    import_check_hash = trusted_utils_malloc(sizeof(struct siphash*) * comm_size);
 
     for (size_t i = 0; i < comm_size; i++) {
         file_paths[i] = trusted_utils_malloc(512);
         snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_import", out_path, local_rank, i);
+
+        import_check_hash[i] = siphash_cls_init(SECRET_KEY);
     }
 
-    import_merger_init(comm_size, file_paths, &current_ID, &current_literals_data, &current_literals_size, read_buffer_size);
+    import_merger_init(comm_size, file_paths, &current_ID, &current_literals_data, &current_literals_size, read_buffer_size, import_check_hash);
 
     // free
     for (size_t i = 0; i < comm_size; i++) {
@@ -149,16 +152,14 @@ void plrat_finder_run() {
                 read_literals(nb_lits);
                 siphash_cls_update(proof_check_hash, (u8*)proof_lits->data, nb_lits * sizeof(int));
                 int nb_hints;
+                nb_hints = plrat_reader_read_int(proof_reader);
+                plrat_reader_skip_bytes(nb_hints * sizeof(u64), proof_reader);
                 // skip line
                 if (id < current_ID) {
-                    nb_hints = plrat_reader_read_int(proof_reader);
-                    plrat_reader_skip_bytes(nb_hints * sizeof(u64), proof_reader);
                     continue;
                 }
                 // check if the clause is the same
                 if (id == current_ID) {
-                    nb_hints = plrat_reader_read_int(proof_reader);
-                    plrat_reader_skip_bytes(nb_hints * sizeof(u64), proof_reader);
                     if (plrat_utils_compare_lits(current_literals_data, proof_lits->data, current_literals_size, nb_lits)) {
                         // plrat_utils_log("found clause, nice");
                         break;
@@ -211,6 +212,19 @@ void plrat_finder_run() {
                     trusted_utils_log(msg);
                 }
                 siphash_cls_free(proof_check_hash);
+                for (size_t i = 0; i < comm_size; i++) {
+                    sig_res_computed = siphash_cls_digest(import_check_hash[i]);
+                    import_merger_read_sig((int*)sig_res_reported, i);
+                    if (!trusted_utils_equal_signatures(sig_res_computed, sig_res_reported)) {
+                        trusted_utils_log_err("Signature does not match in import!");
+                        printf("Signature A is: %s\n", sig_res_computed);
+                        printf("Signature B is: %s\n", sig_res_reported);
+                    } else {
+                        char msg[512];
+                        snprintf(msg, 512, "Signature matches in import local rank: %lu", local_rank);
+                        trusted_utils_log(msg);
+                    }
+                }
                 found_T = true;
                 break;
 
