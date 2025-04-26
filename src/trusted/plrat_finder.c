@@ -31,7 +31,7 @@ struct siphash** import_check_hash;
 // Buffering.
 struct int_vec** all_lits;
 int* left_clauses;
-FILE** importfiles;
+FILE** id_reference_files;
 u64 current_ID = empty_ID;
 int* current_literals_data;
 u64 current_literals_size;

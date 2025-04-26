@@ -42,7 +42,8 @@ u64 local_rank;    // solver id
 // Buffering.
 struct int_vec** all_lits;
 struct clause_vec** clauses;
-FILE** importfiles;
+FILE** id_reference_files;
+FILE** clause_array_files;
 
 void plrat_importer_write_lrat_import_file(u64 clause_id, int* literals, int nb_literals, FILE* current_out) {
     if (redist_strat == 0) {
@@ -71,6 +72,54 @@ void plrat_importer_write_int(int value, FILE* current_out) {
     }
 }
 
+u64 plrat_swap_endianess(u64 value) {
+    u64 result;
+    const int last_index = sizeof(u64) - 1; // index of the last byte
+    u8* first_byte = ((u8*)&value);
+    u64 mask = 1;
+    if (value == 166885) {
+        printf("*first_byte = %i\n", *first_byte);
+    }
+    for (u8* current_byte = first_byte + last_index; first_byte <= current_byte; current_byte--) { // write with big endian for binary sorting
+        
+        
+        result += *current_byte * mask;
+        if (value == 166885) {
+            printf("*current_byte = %i\n", *current_byte);
+            printf("mask = %lu\n", mask);
+            printf("result = %lu\n", result);
+        }
+        mask *= 256L;
+    }
+    return result; // This line is incorrect and should be removed or corrected.
+}
+
+void plrat_importer_write_id_ref(struct clause* clause, FILE* current_out) {
+    if (redist_strat == 0) {
+        fprintf(current_out, "%lu %lu %i\n", clause->id, clause->start, clause->nb_lits);
+    } else {
+        //const int last_index = sizeof(u64) - 1; // index of the last byte
+        //char* first_byte = ((char*)&clause->id);
+        //for (char* current_byte = first_byte + last_index; first_byte <= current_byte; --current_byte) { // write with big endian for binary sorting
+        //    trusted_utils_write_char(*current_byte, current_out);
+        //}
+        trusted_utils_write_ul(plrat_swap_endianess(clause->id), current_out);
+        //trusted_utils_write_ul(clause->id, current_out);
+        trusted_utils_write_ul(clause->start, current_out);
+        trusted_utils_write_int(clause->nb_lits, current_out);
+    }
+}
+
+void plrat_importer_write_ints(int* literals, size_t nb_literals, FILE* current_out) {
+    if (redist_strat == 0) {
+        for (size_t i = 0; i < nb_literals; ++i) {
+            fprintf(current_out, "%i ", literals[i]);
+        }
+    } else {
+        trusted_utils_write_ints(literals, nb_literals, current_out);
+    }
+}
+
 void plrat_importer_write_hash(u8* hash, FILE* current_out) {
     trusted_utils_write_sig(hash, current_out);
 }
@@ -82,7 +131,7 @@ u64 plrat_importer_get_proxy_rank(size_t id) {
 }
 
 FILE* plrat_importer_get_proxy_file(size_t id) {
-    return importfiles[plrat_importer_get_proxy_rank(id)];
+    return id_reference_files[plrat_importer_get_proxy_rank(id)];
 }
 
 void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy) {
@@ -97,7 +146,9 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     local_rank = solver_id;
     all_lits = trusted_utils_malloc(sizeof(struct int_vec*) * (num_solvers));
     clauses = trusted_utils_malloc(sizeof(struct clause_vec*) * (num_solvers));
-    importfiles = trusted_utils_malloc(sizeof(FILE*) * comm_size);
+    id_reference_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
+    clause_array_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
+
     if (local_rank == 0) {
         char msg[512];
         snprintf(msg, 512, "comm_size: %ld\n", comm_size);
@@ -105,7 +156,8 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     }
 
     for (size_t i = 0; i < comm_size; i++) {
-        char proof_path[512];
+        char ids_path[512];
+        char clauses_path[512];
         char proof_folder[512];
         u64 proxy_rank = plrat_importer_get_proxy_rank(i);
         if (redist_strat == 2) {
@@ -118,13 +170,18 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
         }
 
         if (redist_strat == 2) {
-            snprintf(proof_path, 512, "%s/%lu.plrat_proxy", proof_folder, plrat_utils_rank_to_x(local_rank, comm_size));
+            snprintf(ids_path, 512, "%s/%lu.plrat_ids", proof_folder, plrat_utils_rank_to_x(local_rank, comm_size));
+            snprintf(clauses_path, 512, "%s/%lu.plrat_clauses", proof_folder, plrat_utils_rank_to_x(local_rank, comm_size));
         } else {
-            snprintf(proof_path, 512, "%s/%lu.plrat_import", proof_folder, local_rank);
+            snprintf(ids_path, 512, "%s/%lu.plrat_import", proof_folder, local_rank);
         }
 
-        // plrat_utils_log(proof_path);
-        importfiles[i] = fopen(proof_path, "wb");
+        // plrat_utils_log(ids_path);
+        id_reference_files[i] = fopen(ids_path, "wb");
+        if (!(id_reference_files[i])) trusted_utils_exit_eof();
+        clause_array_files[i] = fopen(clauses_path, "wb");
+        if (!(clause_array_files[i])) trusted_utils_exit_eof();
+
         if (i != local_rank) {
             all_lits[i] = int_vec_init(1024);
             clauses[i] = clause_vec_init(1024);
@@ -133,7 +190,6 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
             all_lits[i] = int_vec_init(1);
             clauses[i] = clause_vec_init(1);
         }
-        if (!(importfiles[i])) trusted_utils_exit_eof();
     }
 }
 
@@ -144,15 +200,44 @@ int compare_clause(const void* a, const void* b) {
 }
 
 void plrat_importer_end() {
+    FILE* id_out;
+    FILE* clause_out;
+
+    for (size_t i = 0; i < comm_size; i++) {
+        // struct siphash* hash = siphash_cls_init(SECRET_KEY);  // Initialize the hash with SECRET_KEY
+        id_out = id_reference_files[i];
+        clause_out = clause_array_files[i];
+        struct clause* end = clauses[i]->data + clauses[i]->size;  // Get the end of the clause array
+        for (struct clause* c = clauses[i]->data; c < end; c++) {
+            plrat_importer_write_id_ref(c, id_out);
+        }
+        plrat_importer_write_ints(all_lits[i]->data, all_lits[i]->size, clause_out);  // Write the number of clauses
+        // u8* sig = siphash_cls_digest(hash);
+        // plrat_importer_write_hash(sig, id_out);
+        /// siphash_cls_free(hash);
+    }
+
+    for (size_t i = 0; i < comm_size; i++) {
+        int_vec_free(all_lits[i]);
+        clause_vec_free(clauses[i]);
+        fclose(id_reference_files[i]);
+    }
+    free(id_reference_files);
+    free(clause_array_files);
+    free(all_lits);
+    free(clauses);
+}
+
+void plrat_importer_end_old() {
     struct clause current_clause;
     u64 current_clause_id;
     FILE* current_out;
 
     for (size_t i = 0; i < comm_size; i++) {
         struct siphash* hash = siphash_cls_init(SECRET_KEY);  // Initialize the hash with SECRET_KEY
-        qsort(clauses[i]->data, clauses[i]->size, sizeof(struct clause), compare_clause);
+        // qsort(clauses[i]->data, clauses[i]->size, sizeof(struct clause), compare_clause);
 
-        current_out = importfiles[i];
+        current_out = id_reference_files[i];
         plrat_importer_write_int(clauses[i]->size, current_out);
         siphash_cls_update(hash, (u8*)&(clauses[i]->size), sizeof(int));
 
@@ -175,9 +260,9 @@ void plrat_importer_end() {
     for (size_t i = 0; i < comm_size; i++) {
         int_vec_free(all_lits[i]);
         clause_vec_free(clauses[i]);
-        fclose(importfiles[i]);
+        fclose(id_reference_files[i]);
     }
-    free(importfiles);
+    free(id_reference_files);
     free(all_lits);
     free(clauses);
 }
