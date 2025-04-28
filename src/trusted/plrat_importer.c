@@ -77,21 +77,11 @@ u64 plrat_swap_endianess(u64 value) {
     const int last_index = sizeof(u64) - 1; // index of the last byte
     u8* first_byte = ((u8*)&value);
     u64 mask = 1;
-    if (value == 166885) {
-        printf("*first_byte = %i\n", *first_byte);
-    }
-    for (u8* current_byte = first_byte + last_index; first_byte <= current_byte; current_byte--) { // write with big endian for binary sorting
-        
-        
+    for (u8* current_byte = first_byte + last_index; first_byte <= current_byte; current_byte--) { 
         result += *current_byte * mask;
-        if (value == 166885) {
-            printf("*current_byte = %i\n", *current_byte);
-            printf("mask = %lu\n", mask);
-            printf("result = %lu\n", result);
-        }
         mask *= 256L;
     }
-    return result; // This line is incorrect and should be removed or corrected.
+    return result;
 }
 
 void plrat_importer_write_id_ref(struct clause* clause, FILE* current_out) {
@@ -103,7 +93,7 @@ void plrat_importer_write_id_ref(struct clause* clause, FILE* current_out) {
         //for (char* current_byte = first_byte + last_index; first_byte <= current_byte; --current_byte) { // write with big endian for binary sorting
         //    trusted_utils_write_char(*current_byte, current_out);
         //}
-        trusted_utils_write_ul(plrat_swap_endianess(clause->id), current_out);
+        trusted_utils_write_ul(plrat_swap_endianess(clause->id), current_out); // write with big endian for binary sorting
         //trusted_utils_write_ul(clause->id, current_out);
         trusted_utils_write_ul(clause->start, current_out);
         trusted_utils_write_int(clause->nb_lits, current_out);
