@@ -30,3 +30,5 @@ u64 plrat_utils_2d_to_rank(u64 x, u64 y, u64 n);
 u64 plrat_utils_rank_to_x(u64 rank, u64 n);
 
 u64 plrat_utils_rank_to_y(u64 rank, u64 n);
+
+u64 plrat_swap_endianess(u64 value);

@@ -33,7 +33,7 @@ int* _re_current_literals_data;
 u64 _re_current_literals_size;
 u64 _re_current_ID = empty_ID;
 u64* _re_count_clauses;
-FILE** _re_output_files;
+FILE** _bu_output_files;
 struct siphash** out_hash;
 
 void plrat_reroute_write_lrat_import_file(u64 clause_id, int* literals, int nb_literals, FILE* current_out) {
@@ -79,7 +79,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
     }
     out_path = main_path;
     local_rank = solver_rank;
-    _re_output_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
+    _bu_output_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
     _re_count_clauses = trusted_utils_calloc(comm_size, sizeof(u64));
     out_hash = trusted_utils_malloc(sizeof(struct siphash*) * comm_size);
     // printf("local rank: %lu, num solvers: %lu\n", local_rank, n_solvers);
@@ -93,10 +93,10 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         snprintf(folder_path, 512, "%s/%lu", out_path, plrat_reroute_get_destination_rank(i));
         mkdir(folder_path, 0755);
         snprintf(tmp_path, 512, "%s/%lu.plrat_import", folder_path, plrat_utils_rank_to_y(local_rank, comm_size));
-        _re_output_files[i] = fopen(tmp_path, "w");
+        _bu_output_files[i] = fopen(tmp_path, "w");
 
-        if (!(_re_output_files[i])) trusted_utils_exit_eof();
-        plrat_reroute_write_int(0, _re_output_files[i]);  // write placeholder 0 for count of clauses
+        if (!(_bu_output_files[i])) trusted_utils_exit_eof();
+        plrat_reroute_write_int(0, _bu_output_files[i]);  // write placeholder 0 for count of clauses
 
         out_hash[i] = siphash_cls_init(SECRET_KEY);
     }
@@ -132,17 +132,17 @@ int compare_clause(const void* a, const void* b) {
 void plrat_reroute_end() {
     for (size_t i = 0; i < comm_size; i++) {
         u8* sig = siphash_cls_digest(out_hash[i]);
-        trusted_utils_write_sig(sig, _re_output_files[i]);
+        trusted_utils_write_sig(sig, _bu_output_files[i]);
 
-        fseek(_re_output_files[i], 0, SEEK_SET);
-        plrat_reroute_write_int(_re_count_clauses[i], _re_output_files[i]);
-        fclose(_re_output_files[i]);
+        fseek(_bu_output_files[i], 0, SEEK_SET);
+        plrat_reroute_write_int(_re_count_clauses[i], _bu_output_files[i]);
+        fclose(_bu_output_files[i]);
         siphash_cls_free(out_hash[i]);
         free(out_hash[i]);
     }
     free(out_hash);
     free(_re_count_clauses);
-    free(_re_output_files);
+    free(_bu_output_files);
     import_merger_end();
 }
 
@@ -164,7 +164,7 @@ void plrat_reroute_run() {
             _re_current_ID,
             _re_current_literals_data,
             _re_current_literals_size,
-            _re_output_files[destination_index]);
+            _bu_output_files[destination_index]);
 
         _re_count_clauses[destination_index] += 1;
     }

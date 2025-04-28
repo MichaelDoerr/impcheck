@@ -152,3 +152,15 @@ u64 plrat_utils_rank_to_x(u64 rank, u64 n) {
 u64 plrat_utils_rank_to_y(u64 rank, u64 n) {
     return rank / n;
 }
+
+u64 plrat_swap_endianess(u64 value) {
+    u64 result;
+    const int last_index = sizeof(u64) - 1; // index of the last byte
+    u8* first_byte = ((u8*)&value);
+    u64 mask = 1;
+    for (u8* current_byte = first_byte + last_index; first_byte <= current_byte; current_byte--) { 
+        result += *current_byte * mask;
+        mask *= 256L;
+    }
+    return result;
+}

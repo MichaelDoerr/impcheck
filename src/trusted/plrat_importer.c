@@ -72,18 +72,6 @@ void plrat_importer_write_int(int value, FILE* current_out) {
     }
 }
 
-u64 plrat_swap_endianess(u64 value) {
-    u64 result;
-    const int last_index = sizeof(u64) - 1; // index of the last byte
-    u8* first_byte = ((u8*)&value);
-    u64 mask = 1;
-    for (u8* current_byte = first_byte + last_index; first_byte <= current_byte; current_byte--) { 
-        result += *current_byte * mask;
-        mask *= 256L;
-    }
-    return result;
-}
-
 void plrat_importer_write_id_ref(struct clause* clause, FILE* current_out) {
     if (redist_strat == 0) {
         fprintf(current_out, "%lu %lu %i\n", clause->id, clause->start, clause->nb_lits);

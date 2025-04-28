@@ -81,6 +81,19 @@ add_executable(plrat_reroute
     src/trusted/vectors.c
     src/trusted/siphash_cls.c )
 
+    add_executable(plrat_rebuild
+    src/trusted/main_plrat_rebuild_clauses.c 
+    src/trusted/import_merger.c 
+    src/trusted/plrat_rebuild.c
+    src/trusted/trusted_utils.c
+    src/trusted/plrat_utils.c 
+    src/trusted/lrat_check.c 
+    src/writer.c 
+    src/trusted/hash.c 
+    src/trusted/secret.c 
+    src/trusted/plrat_file_reader.c
+    src/trusted/vectors.c
+    src/trusted/siphash_cls.c )
 
 add_executable(plrat_last_pass
     src/trusted/import_merger.c 
@@ -98,6 +111,7 @@ add_executable(plrat_last_pass
     
 # Link against math library
 target_link_libraries(plrat_first_pass m)
+target_link_libraries(plrat_rebuild m)
 target_link_libraries(plrat_reroute m)
 target_link_libraries(plrat_last_pass m)
 
