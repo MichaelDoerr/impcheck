@@ -147,8 +147,8 @@ void plrat_rebuild_run() {
             u64 clause_id = plrat_swap_endianess(plrat_reader_read_ul(_bu_id_files[i]));
             u64 start_index = plrat_reader_read_ul(_bu_id_files[i]);
             u64 nb_lits = plrat_reader_read_int(_bu_id_files[i]);
-            fseek(_bu_clause_files[i], start_index * sizeof(int), SEEK_SET);
-            int_vec_resize(_bu_clause_buffer, nb_lits);
+            fseek(_bu_clause_files[i], start_index * sizeof(int), SEEK_SET); // Todo: this functionality is needed in a buffered filereader.
+            int_vec_resize(_bu_clause_buffer, nb_lits); // this is super slow with standard file reader.
             trusted_utils_read_ints(_bu_clause_buffer->data, nb_lits, _bu_clause_files[i]);
 
             plrat_rebuild_write_lrat_import_file(clause_id, _bu_clause_buffer->data, nb_lits, _bu_output_files[i]);
