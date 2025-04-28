@@ -105,6 +105,7 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
             FILE* f = fopen(out_file_path, "w");
             trusted_utils_write_int(0, f);  // write placeholder 0 for count of clauses
             fclose(f);
+            exit(0);
         }
         else {
             FILE *id_file = fopen(id_file_path, "rb");
@@ -141,6 +142,7 @@ void plrat_rebuild_end() {
 void plrat_rebuild_run() {
     char msg[512];
     for (size_t i = 0; i < comm_size; i++) {
+        trusted_utils_write_int(_bu_count_clauses[i], _bu_output_files[i]);
         for (size_t cls_nr = 0; cls_nr < _bu_count_clauses[i] ; cls_nr++) {
             u64 clause_id = plrat_swap_endianess(plrat_reader_read_ul(_bu_id_files[i]));
             u64 start_index = plrat_reader_read_ul(_bu_id_files[i]);
