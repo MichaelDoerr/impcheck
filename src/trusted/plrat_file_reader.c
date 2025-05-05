@@ -85,11 +85,18 @@ void plrat_reader_seek(u64 byte_pos, struct plrat_reader* reader) {
 
     if (loaded_start <= searched_byte && searched_byte < loaded_end){ // seeked position is loaded in buffer
         reader->pos = reader->read_buffer + (searched_byte - loaded_start);
-        return;
     }
-    if (loaded_end <= searched_byte){ // seeked position comes later
+    else if (loaded_end <= searched_byte){ // seeked position comes later
         long current_pos = (reader->pos - reader->read_buffer) + loaded_start;
         plrat_reader_skip_bytes(searched_byte - current_pos, reader);
+    }
+    else{ // seeked position comes earlier
+        long offset_front = reader->buffer_size/10L;
+        long set_position = max(searched_byte - offset_front, 0L);
+        reader->remaining_bytes = reader->total_bytes - set_position;
+        fseek(reader->buffered_file, set_position, SEEK_SET);
+        fill_buffer(reader);
+        reader->pos += searched_byte - set_position;
     }
 }
 

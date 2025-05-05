@@ -10,6 +10,8 @@
 #undef TYPED
 #undef TYPE
 
+#define max(X, Y) (((X) > (Y)) ? (X) : (Y))
+
 struct plrat_reader{
     /* data */
     int local_rank;

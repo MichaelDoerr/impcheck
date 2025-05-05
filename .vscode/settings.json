@@ -20,6 +20,7 @@
         "type_traits": "c",
         "utility": "c",
         "random": "c",
-        "plrat_utils.h": "c"
+        "plrat_utils.h": "c",
+        "string.h": "c"
     }
 }
