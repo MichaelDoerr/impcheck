@@ -185,7 +185,7 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
     buf_hints = u64_vec_init(1 << 14);
     nb_solvers = num_solvers;
     solver_rank = solver_id;
-    plrat_importer_init(proofs_path, solver_id, num_solvers, redistribution_strategy);
+    plrat_importer_init(proofs_path, solver_id, num_solvers, redistribution_strategy, read_buffer_size);
     if (!pc_load_from_file(formular)) {  //! pc_load() ||
         exit(0);
     }

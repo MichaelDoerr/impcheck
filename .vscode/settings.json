@@ -21,6 +21,7 @@
         "utility": "c",
         "random": "c",
         "plrat_utils.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "initializer_list": "c"
     }
 }
