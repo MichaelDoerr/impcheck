@@ -161,8 +161,8 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
         if (!(clause_array_files[i])) trusted_utils_exit_eof();
 
         if (i != local_rank) {
-            all_lits[i] = int_vec_init(write_buffer_size);
-            clauses[i] = clause_vec_init(write_buffer_size);
+            all_lits[i] = int_vec_init(write_buffer_size / sizeof(int));
+            clauses[i] = clause_vec_init(write_buffer_size / sizeof(struct clause));
         } else {
             // Use a small placeholder for less edgecases
             all_lits[i] = int_vec_init(1);
