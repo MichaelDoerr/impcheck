@@ -33,7 +33,7 @@ const u64 empty_ID = -1;
 // Buffering.
 u64* _bu_count_clauses;
 struct plrat_reader** _bu_id_files;
-FILE** _bu_clause_files;
+struct plrat_reader** _bu_clause_files;
 FILE** _bu_output_files;
 struct int_vec* _bu_clause_buffer;
 
@@ -82,7 +82,7 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
     local_rank = solver_rank;
     _bu_count_clauses = trusted_utils_malloc(sizeof(u64) * comm_size);
     _bu_output_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
-    _bu_clause_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
+    _bu_clause_files = trusted_utils_malloc(sizeof(struct plrat_reader*) * comm_size);
     _bu_id_files = trusted_utils_malloc(sizeof(struct plrat_reader*) * comm_size);
 
     // printf("local rank: %lu, num solvers: %lu\n", local_rank, n_solvers);
@@ -115,7 +115,7 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
             _bu_count_clauses[i] = st.st_size / 20;
 
             _bu_id_files[i] = plrat_reader_init(read_buffer_size, id_file, local_rank);
-            _bu_clause_files[i] = fopen(cls_file_path, "rb");
+            _bu_clause_files[i] = plrat_reader_init(read_buffer_size, fopen(cls_file_path, "rb"), local_rank);
             _bu_output_files[i] = fopen(out_file_path, "wb");
         }
     }
@@ -129,7 +129,7 @@ int compare_clause(const void* a, const void* b) {
 
 void plrat_rebuild_end() {
     for (size_t i = 0; i < comm_size; i++) {
-        fclose(_bu_clause_files[i]);
+        plrat_reader_end(_bu_clause_files[i]);
         fclose(_bu_output_files[i]);
         plrat_reader_end(_bu_id_files[i]);
     }
@@ -147,9 +147,10 @@ void plrat_rebuild_run() {
             u64 clause_id = plrat_swap_endianess(plrat_reader_read_ul(_bu_id_files[i]));
             u64 start_index = plrat_reader_read_ul(_bu_id_files[i]);
             u64 nb_lits = plrat_reader_read_int(_bu_id_files[i]);
-            fseek(_bu_clause_files[i], start_index * sizeof(int), SEEK_SET); // Todo: this functionality is needed in a buffered filereader.
+            plrat_reader_seek(start_index * sizeof(int), _bu_clause_files[i]); 
+           
             int_vec_resize(_bu_clause_buffer, nb_lits); // this is super slow with standard file reader.
-            trusted_utils_read_ints(_bu_clause_buffer->data, nb_lits, _bu_clause_files[i]);
+            plrat_reader_read_ints(_bu_clause_buffer->data, nb_lits, _bu_clause_files[i]);
 
             plrat_rebuild_write_lrat_import_file(clause_id, _bu_clause_buffer->data, nb_lits, _bu_output_files[i]);
         }

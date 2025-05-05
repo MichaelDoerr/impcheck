@@ -26,6 +26,7 @@ void fill_buffer(struct plrat_reader* reader) {
     reader->pos = reader->read_buffer;
     reader->end = reader->pos + read_size;
     reader->remaining_bytes -= read_size;
+    reader->actual_buffer_size = read_size;
     //printf("read size: %lu\n", read_size);
     //printf("Left in File After read: %lu\n", reader->remaining_bytes);
 
@@ -45,12 +46,14 @@ struct plrat_reader* plrat_reader_init(u64 buffer_size_bytes, FILE* file, int lo
     struct stat st;
     int fd = fileno(file);
     fstat(fd, &st);
+    reader->total_bytes = st.st_size;
     reader->remaining_bytes = st.st_size;
 
     reader->local_rank = local_rank;
     reader->buffered_file = file;
     reader->buffer_size = buffer_size_bytes;
     reader->read_buffer = (char*)trusted_utils_malloc(buffer_size_bytes);
+    reader->actual_buffer_size = 0;
     reader->pos = reader->read_buffer;
     reader->end = reader->pos;
     reader->fragment_buffer.size = 0;
@@ -69,6 +72,25 @@ struct plrat_reader* plrat_reader_init(u64 buffer_size_bytes, FILE* file, int lo
     //printf("bytes till end: %ld\n", bytes_till_end);
 
     return reader;
+}
+
+void plrat_reader_seek(u64 byte_pos, struct plrat_reader* reader) {
+    long searched_byte = (long)byte_pos;
+    if (searched_byte > reader->total_bytes){
+        printf("Error: Seeking beyond file size.\n");
+        return;
+    }
+    long loaded_end = reader->total_bytes - reader->remaining_bytes;
+    long loaded_start = loaded_end - reader->actual_buffer_size;
+
+    if (loaded_start <= searched_byte && searched_byte < loaded_end){ // seeked position is loaded in buffer
+        reader->pos = reader->read_buffer + (searched_byte - loaded_start);
+        return;
+    }
+    if (loaded_end <= searched_byte){ // seeked position comes later
+        long current_pos = (reader->pos - reader->read_buffer) + loaded_start;
+        plrat_reader_skip_bytes(searched_byte - current_pos, reader);
+    }
 }
 
 void plrat_reader_end(struct plrat_reader* reader){

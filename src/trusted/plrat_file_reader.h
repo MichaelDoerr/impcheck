@@ -19,6 +19,8 @@ struct plrat_reader{
     char* pos;
     char* end;
     long remaining_bytes; // starts as filesize
+    long total_bytes; // filesize
+    long actual_buffer_size; // may be smaller than buffer_size when near EOF
     FILE* buffered_file;
 };
 
@@ -33,4 +35,5 @@ u64  plrat_reader_read_ul(struct plrat_reader* reader);
 void plrat_reader_read_uls(u64* data, u64 nb_uls, struct plrat_reader* reader);
 char plrat_reader_read_char(struct plrat_reader* reader);
 void plrat_reader_skip_bytes(u64 nb_bytes, struct plrat_reader* reader);
+void plrat_reader_seek(u64 byte_pos, struct plrat_reader* reader);
 void plrat_reader_end(struct plrat_reader* reader);
