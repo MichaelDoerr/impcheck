@@ -35,6 +35,7 @@
 const char* out_path;  // named pipe
 u64 n_solvers;         // number of solvers
 double root_n;         // square root of number of solvers
+long* written_lits;     // number of lits written to the file
 size_t comm_size;
 u64 redist_strat;  // redistribution_strategy
 u64 local_rank;    // solver id
@@ -43,7 +44,7 @@ u64 local_rank;    // solver id
 struct int_vec** all_lits;
 struct clause_vec** clauses;
 FILE** id_reference_files;
-FILE** clause_array_files;
+FILE** lits_array_files;
 
 void plrat_importer_write_lrat_import_file(u64 clause_id, int* literals, int nb_literals, FILE* current_out) {
     if (redist_strat == 0) {
@@ -122,10 +123,11 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     }
     out_path = main_path;
     local_rank = solver_id;
-    all_lits = trusted_utils_malloc(sizeof(struct int_vec*) * (num_solvers));
-    clauses = trusted_utils_malloc(sizeof(struct clause_vec*) * (num_solvers));
+    written_lits = trusted_utils_calloc(comm_size, sizeof(long));
+    all_lits = trusted_utils_malloc(sizeof(struct int_vec*) * num_solvers);
+    clauses = trusted_utils_malloc(sizeof(struct clause_vec*) * num_solvers);
     id_reference_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
-    clause_array_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
+    lits_array_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
 
     if (local_rank == 0) {
         char msg[512];
@@ -157,8 +159,8 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
         // plrat_utils_log(ids_path);
         id_reference_files[i] = fopen(ids_path, "wb");
         if (!(id_reference_files[i])) trusted_utils_exit_eof();
-        clause_array_files[i] = fopen(clauses_path, "wb");
-        if (!(clause_array_files[i])) trusted_utils_exit_eof();
+        lits_array_files[i] = fopen(clauses_path, "wb");
+        if (!(lits_array_files[i])) trusted_utils_exit_eof();
 
         if (i != local_rank) {
             all_lits[i] = int_vec_init(write_buffer_size / sizeof(int));
@@ -179,17 +181,17 @@ int compare_clause(const void* a, const void* b) {
 
 void plrat_importer_end() {
     FILE* id_out;
-    FILE* clause_out;
+    FILE* lits_out;
 
     for (size_t i = 0; i < comm_size; i++) {
         // struct siphash* hash = siphash_cls_init(SECRET_KEY);  // Initialize the hash with SECRET_KEY
         id_out = id_reference_files[i];
-        clause_out = clause_array_files[i];
+        lits_out = lits_array_files[i];
         struct clause* end = clauses[i]->data + clauses[i]->size;  // Get the end of the clause array
         for (struct clause* c = clauses[i]->data; c < end; c++) {
             plrat_importer_write_id_ref(c, id_out);
         }
-        plrat_importer_write_ints(all_lits[i]->data, all_lits[i]->size, clause_out);  // Write the number of clauses
+        plrat_importer_write_ints(all_lits[i]->data, all_lits[i]->size, lits_out);  // Write the number of clauses
         // u8* sig = siphash_cls_digest(hash);
         // plrat_importer_write_hash(sig, id_out);
         /// siphash_cls_free(hash);
@@ -201,7 +203,7 @@ void plrat_importer_end() {
         fclose(id_reference_files[i]);
     }
     free(id_reference_files);
-    free(clause_array_files);
+    free(lits_array_files);
     free(all_lits);
     free(clauses);
 }
@@ -250,23 +252,30 @@ void plrat_importer_log(unsigned long id, const int* literals, int nb_literals) 
     int file_id = plrat_utils_rank_to_x(id % n_solvers, comm_size);
     _clause.id = id;
     _clause.nb_lits = nb_literals;
-    _clause.start = all_lits[file_id]->size;
-    struct clause_vec* vec = clauses[file_id];
+    _clause.start = all_lits[file_id]->size + written_lits[file_id];
+    struct clause_vec* clauses_vec = clauses[file_id];
 
-    if (vec->size == vec->capacity) { // write to file if capacity is reached
+    if (clauses_vec->size == clauses_vec->capacity) { // write to file if capacity is reached
         // struct siphash* hash = siphash_cls_init(SECRET_KEY);  // Initialize the hash with SECRET_KEY
         FILE* id_out = id_reference_files[file_id];
-        struct clause* end = vec->data + vec->size;  // Get the end of the clause array
-        for (struct clause* c = vec->data; c < end; c++) {
+        struct clause* end = clauses_vec->data + clauses_vec->size;  // Get the end of the clause array
+        for (struct clause* c = clauses_vec->data; c < end; c++) {
             plrat_importer_write_id_ref(c, id_out);
         }
-        vec->size = 0; // Reset used size to 0 after writing to file
+        clauses_vec->size = 0; // Reset used size to 0 after writing to file
     }
-    vec->data[vec->size++] = _clause;
+    clauses_vec->data[clauses_vec->size++] = _clause;
 
-    //FILE* clause_out = clause_array_files[file_id];
-    //plrat_importer_write_ints(all_lits[i]->data, all_lits[i]->size, clause_out);
+    struct int_vec* lits_vec = all_lits[file_id];
+    FILE* lits_out = lits_array_files[file_id];
+    if ((long)lits_vec->size + (long)nb_literals > (long)lits_vec->capacity) {  // write to file if capacity is reached
+        plrat_importer_write_ints(lits_vec->data, lits_vec->size, lits_out);
+        written_lits[file_id] += lits_vec->size; // Update the total number of written literals
+        lits_vec->size = 0;  // Reset used size to 0 after writing to file
+    }
+    int_vec_reserve(lits_vec, nb_literals);  // capacity is defined to only grow and never shrink
+
     for (int i = 0; i < nb_literals; i++) {
-        int_vec_push(all_lits[file_id], literals[i]);
+        lits_vec->data[lits_vec->size++] = literals[i];
     }
 }
