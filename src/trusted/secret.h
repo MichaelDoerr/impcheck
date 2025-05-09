@@ -14,3 +14,4 @@
 // this data should instead be set dynamically for each solving attempt
 // following some secure key exchange procedure.
 extern const unsigned char SECRET_KEY[];
+extern const unsigned long SECRET_KEY_2;

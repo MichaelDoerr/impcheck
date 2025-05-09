@@ -64,7 +64,8 @@ add_executable(plrat_first_pass
     src/trusted/confirm.c
     src/trusted/plrat_file_reader.c
     src/trusted/siphash.c 
-    src/trusted/siphash_cls.c)
+    src/trusted/siphash_cls.c
+    src/trusted/commutative_sig.c)
     
 
 add_executable(plrat_reroute
@@ -79,7 +80,8 @@ add_executable(plrat_reroute
     src/trusted/secret.c 
     src/trusted/plrat_file_reader.c
     src/trusted/vectors.c
-    src/trusted/siphash_cls.c )
+    src/trusted/siphash_cls.c 
+    src/trusted/commutative_sig.c)
 
     add_executable(plrat_rebuild
     src/trusted/main_plrat_rebuild_clauses.c 
@@ -93,7 +95,7 @@ add_executable(plrat_reroute
     src/trusted/secret.c 
     src/trusted/plrat_file_reader.c
     src/trusted/vectors.c
-    src/trusted/siphash_cls.c )
+    src/trusted/siphash_cls.c)
 
 add_executable(plrat_last_pass
     src/trusted/import_merger.c 

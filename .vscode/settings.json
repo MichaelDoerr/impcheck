@@ -22,6 +22,7 @@
         "random": "c",
         "plrat_utils.h": "c",
         "string.h": "c",
-        "initializer_list": "c"
+        "initializer_list": "c",
+        "secret.h": "c"
     }
 }
