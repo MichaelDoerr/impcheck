@@ -198,7 +198,7 @@ void plrat_importer_end() {
         }
         plrat_importer_write_ints(current_lits.data, current_lits.size, lits_out);  // Write the number of clauses
         u8* sig = comm_sig_digest(signatures[i]);
-        plrat_importer_write_hash(sig, id_out);
+        plrat_importer_write_hash(sig, lits_out);
         comm_sig_free(signatures[i]);
     }
 
@@ -258,6 +258,7 @@ void plrat_importer_log(unsigned long id, const int* literals, int nb_literals) 
     _clause.id = id;
     _clause.nb_lits = nb_literals;
     _clause.start = all_lits[file_id]->size + written_lits[file_id];
+    comm_sig_update_clause(signatures[file_id], id, literals, nb_literals);
     struct clause_vec* clauses_vec = clauses[file_id];
 
     if (clauses_vec->size == clauses_vec->capacity) { // write to file if capacity is reached
