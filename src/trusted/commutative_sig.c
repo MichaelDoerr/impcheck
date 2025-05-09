@@ -27,8 +27,8 @@ struct comm_sig* comm_sig_init(const u64 key){
     hash->first_object_state = first_init * key;
     hash->second_object_state = second_init * key;
     hash->key = key;
-    hash->first_signature = 0;
-    hash->second_signature = 0;
+    hash->first_signature = hash->first_object_state;
+    hash->second_signature = hash->second_object_state;
     return hash;
 }
 

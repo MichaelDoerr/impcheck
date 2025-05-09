@@ -15,7 +15,7 @@
 #include "plrat_checker.h"  // for trusted_utils_read_int, trusted_utils_log...
 #include "plrat_utils.h"
 #include "secret.h"
-#include "siphash_cls.h"
+#include "commutative_sig.h"
 #include "top_check.h"  // for top_check_commit_formula_sig, top_check_d...
 
 // Instantiate clause_vec
@@ -36,6 +36,7 @@ const char* out_path;  // named pipe
 u64 n_solvers;         // number of solvers
 double root_n;         // square root of number of solvers
 long* written_lits;     // number of lits written to the file
+struct comm_sig** signatures;
 size_t comm_size;
 u64 redist_strat;  // redistribution_strategy
 u64 local_rank;    // solver id
@@ -128,6 +129,7 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     clauses = trusted_utils_malloc(sizeof(struct clause_vec*) * num_solvers);
     id_reference_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
     lits_array_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
+    signatures = trusted_utils_malloc(sizeof(struct comm_sig*) * comm_size);
 
     if (local_rank == 0) {
         char msg[512];
@@ -170,6 +172,7 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
             all_lits[i] = int_vec_init(1);
             clauses[i] = clause_vec_init(1);
         }
+        signatures[i] = comm_sig_init(SECRET_KEY_2);
     }
 }
 
@@ -184,17 +187,19 @@ void plrat_importer_end() {
     FILE* lits_out;
 
     for (size_t i = 0; i < comm_size; i++) {
-        // struct siphash* hash = siphash_cls_init(SECRET_KEY);  // Initialize the hash with SECRET_KEY
+        
         id_out = id_reference_files[i];
         lits_out = lits_array_files[i];
+        struct int_vec current_lits = *all_lits[i];
         struct clause* end = clauses[i]->data + clauses[i]->size;  // Get the end of the clause array
         for (struct clause* c = clauses[i]->data; c < end; c++) {
+            comm_sig_update_clause(signatures[i], c->id, current_lits.data + c->start, c->nb_lits);  // Update the signature with the clause id and literals
             plrat_importer_write_id_ref(c, id_out);
         }
-        plrat_importer_write_ints(all_lits[i]->data, all_lits[i]->size, lits_out);  // Write the number of clauses
-        // u8* sig = siphash_cls_digest(hash);
-        // plrat_importer_write_hash(sig, id_out);
-        /// siphash_cls_free(hash);
+        plrat_importer_write_ints(current_lits.data, current_lits.size, lits_out);  // Write the number of clauses
+        u8* sig = comm_sig_digest(signatures[i]);
+        plrat_importer_write_hash(sig, id_out);
+        comm_sig_free(signatures[i]);
     }
 
     for (size_t i = 0; i < comm_size; i++) {
@@ -214,27 +219,27 @@ void plrat_importer_end_old() {
     FILE* current_out;
 
     for (size_t i = 0; i < comm_size; i++) {
-        struct siphash* hash = siphash_cls_init(SECRET_KEY);  // Initialize the hash with SECRET_KEY
+        //struct siphash* hash = siphash_cls_init(SECRET_KEY);  // Initialize the hash with SECRET_KEY
         // qsort(clauses[i]->data, clauses[i]->size, sizeof(struct clause), compare_clause);
 
         current_out = id_reference_files[i];
         plrat_importer_write_int(clauses[i]->size, current_out);
-        siphash_cls_update(hash, (u8*)&(clauses[i]->size), sizeof(int));
+        //siphash_cls_update(hash, (u8*)&(clauses[i]->size), sizeof(int));
 
         for (size_t c = 0; c < clauses[i]->size; c++) {
             current_clause = clauses[i]->data[c];
             current_clause_id = current_clause.id;
-            siphash_cls_update(hash, (u8*)&current_clause_id, sizeof(u64));
-            siphash_cls_update(hash, (u8*)&(all_lits[i]->data[current_clause.start]), current_clause.nb_lits * sizeof(int));
+            //siphash_cls_update(hash, (u8*)&current_clause_id, sizeof(u64));
+            //siphash_cls_update(hash, (u8*)&(all_lits[i]->data[current_clause.start]), current_clause.nb_lits * sizeof(int));
             plrat_importer_write_lrat_import_file(
                 current_clause_id,
                 &(all_lits[i]->data[current_clause.start]),
                 current_clause.nb_lits,
                 current_out);
         }
-        u8* sig = siphash_cls_digest(hash);
-        plrat_importer_write_hash(sig, current_out);
-        siphash_cls_free(hash);
+        //u8* sig = siphash_cls_digest(hash);
+        //plrat_importer_write_hash(sig, current_out);
+        //siphash_cls_free(hash);
     }
 
     for (size_t i = 0; i < comm_size; i++) {
@@ -256,7 +261,6 @@ void plrat_importer_log(unsigned long id, const int* literals, int nb_literals) 
     struct clause_vec* clauses_vec = clauses[file_id];
 
     if (clauses_vec->size == clauses_vec->capacity) { // write to file if capacity is reached
-        // struct siphash* hash = siphash_cls_init(SECRET_KEY);  // Initialize the hash with SECRET_KEY
         FILE* id_out = id_reference_files[file_id];
         struct clause* end = clauses_vec->data + clauses_vec->size;  // Get the end of the clause array
         for (struct clause* c = clauses_vec->data; c < end; c++) {

@@ -23,6 +23,8 @@
         "plrat_utils.h": "c",
         "string.h": "c",
         "initializer_list": "c",
-        "secret.h": "c"
+        "secret.h": "c",
+        "vector": "c",
+        "memory": "c"
     }
 }
