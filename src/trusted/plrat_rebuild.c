@@ -154,6 +154,15 @@ void plrat_rebuild_run() {
 
             plrat_rebuild_write_lrat_import_file(clause_id, _bu_clause_buffer->data, nb_lits, _bu_output_files[i]);
         }
+        
+        const u8 sig_res_reported[16];
+        
+        plrat_reader_seek((_bu_clause_files[i]->total_bytes - 16), _bu_clause_files[i]); 
+        plrat_reader_read_ints((int*)sig_res_reported, 4, _bu_clause_files[i]);
+        //if (i==0){
+        //    printf("Signature reported: %d %d %d %d\n", sig_res_reported[0], sig_res_reported[1], sig_res_reported[2], sig_res_reported[3]);
+        //}
+        trusted_utils_write_sig(sig_res_reported, _bu_output_files[i]);
     }
     
     snprintf(msg, 512, "Done local_rank=%lu", local_rank);
