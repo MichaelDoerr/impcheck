@@ -29,6 +29,8 @@ struct comm_sig* comm_sig_init(const u64 key){
     hash->key = key;
     hash->first_signature = hash->first_object_state;
     hash->second_signature = hash->second_object_state;
+    //hash->first_signature =  0;
+    //hash->second_signature = 0;
     return hash;
 }
 
@@ -37,6 +39,12 @@ void comm_sig_update_clause(struct comm_sig* hash, u64 clause_id, const int* lit
     comm_sig_update(hash, (const unsigned char*)&clause_id, sizeof(u64));
     comm_sig_update(hash, (const unsigned char*)lits, nb_literals * sizeof(int));
     finish_object(hash);
+
+    //UNUSED(lits);
+    //UNUSED(nb_literals);
+    //UNUSED(clause_id);
+    //hash->first_signature += 1;
+    //hash->second_signature += 1;
 }
 
 void comm_sig_update(struct comm_sig* hash, const unsigned char* data, u64 nb_bytes){

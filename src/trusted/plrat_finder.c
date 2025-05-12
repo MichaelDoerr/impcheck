@@ -108,7 +108,7 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
         import_check_hash[i] = siphash_cls_init(SECRET_KEY);
     }
 
-    import_merger_init(comm_size, file_paths, &current_ID, &current_literals_data, &current_literals_size, read_buffer_size, import_check_hash);
+    import_merger_init(comm_size, file_paths, &current_ID, &current_literals_data, &current_literals_size, read_buffer_size, import_check_hash, NULL);
 
     // free
     for (size_t i = 0; i < comm_size; i++) {
@@ -217,8 +217,8 @@ void plrat_finder_run() {
                     import_merger_read_sig((int*)sig_res_reported, i);
                     if (!trusted_utils_equal_signatures(sig_res_computed, sig_res_reported)) {
                         trusted_utils_log_err("Signature does not match in import!");
-                        printf("Signature A is: %s\n", sig_res_computed);
-                        printf("Signature B is: %s\n", sig_res_reported);
+                        printf("Signature A is: %lu\n", *((u64*)sig_res_computed));
+                        printf("Signature B is: %lu\n", *((u64*)sig_res_reported));
                     } else {
                         char msg[512];
                         snprintf(msg, 512, "Signature matches in import local rank: %lu", local_rank);

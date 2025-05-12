@@ -109,7 +109,8 @@ add_executable(plrat_last_pass
     src/trusted/secret.c 
     src/trusted/lrat_check.c
     src/trusted/plrat_file_reader.c
-    src/trusted/siphash_cls.c)
+    src/trusted/siphash_cls.c
+    src/trusted/commutative_sig.c)
     
 # Link against math library
 target_link_libraries(plrat_first_pass m)

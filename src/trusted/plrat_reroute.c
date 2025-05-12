@@ -12,6 +12,7 @@
 
 #include "checker_interface.h"
 #include "clause.h"
+#include "commutative_sig.h"
 #include "hash.h"
 #include "import_merger.h"
 #include "plrat_checker.h"  // for trusted_utils_read_int, trusted_utils_log...
@@ -35,6 +36,7 @@ u64 _re_current_ID = empty_ID;
 u64* _re_count_clauses;
 FILE** _bu_output_files;
 struct siphash** out_hash;
+struct comm_sig** comm_sig_compute;
 
 void plrat_reroute_write_lrat_import_file(u64 clause_id, int* literals, int nb_literals, FILE* current_out) {
     if (redist_strat == 0) {
@@ -82,6 +84,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
     _bu_output_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
     _re_count_clauses = trusted_utils_calloc(comm_size, sizeof(u64));
     out_hash = trusted_utils_malloc(sizeof(struct siphash*) * comm_size);
+    comm_sig_compute = trusted_utils_malloc(sizeof(struct comm_sig*) * comm_size);
     // printf("local rank: %lu, num solvers: %lu\n", local_rank, n_solvers);
     char msg[512];
     snprintf(msg, 512, "root_n:%f", root_n);
@@ -99,6 +102,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         plrat_reroute_write_int(0, _bu_output_files[i]);  // write placeholder 0 for count of clauses
 
         out_hash[i] = siphash_cls_init(SECRET_KEY);
+        comm_sig_compute[i] = comm_sig_init(SECRET_KEY_2);
     }
     char** file_paths = trusted_utils_malloc(sizeof(char*) * comm_size);
 
@@ -114,7 +118,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         }
         if (local_rank == 6) plrat_utils_log(file_paths[i]);
     }
-    import_merger_init(comm_size, file_paths, &_re_current_ID, &_re_current_literals_data, &_re_current_literals_size, read_buffer_size, NULL);
+    import_merger_init(comm_size, file_paths, &_re_current_ID, &_re_current_literals_data, &_re_current_literals_size, read_buffer_size, NULL, comm_sig_compute);
 
     // free
     for (size_t i = 0; i < comm_size; i++) {
@@ -131,6 +135,20 @@ int compare_clause(const void* a, const void* b) {
 
 void plrat_reroute_end() {
     for (size_t i = 0; i < comm_size; i++) {
+        u8* computed_incoming_sig = comm_sig_digest(comm_sig_compute[i]);
+        const u8 reported_incoming_sig[16];
+        import_merger_read_sig((int*)reported_incoming_sig, i);
+        if (!trusted_utils_equal_signatures(reported_incoming_sig, computed_incoming_sig)) {
+            trusted_utils_log_err("Signature does not match in import!");
+            printf("Signature A is: %lu\n", *((u64*)computed_incoming_sig));
+            printf("Signature B is: %lu\n", *((u64*)reported_incoming_sig));
+        } else {
+            char msg[512];
+            snprintf(msg, 512, "Signature matches in import local rank: %lu", local_rank);
+            trusted_utils_log(msg);
+        }
+        free(computed_incoming_sig);
+
         u8* sig = siphash_cls_digest(out_hash[i]);
         trusted_utils_write_sig(sig, _bu_output_files[i]);
 
@@ -138,9 +156,11 @@ void plrat_reroute_end() {
         plrat_reroute_write_int(_re_count_clauses[i], _bu_output_files[i]);
         fclose(_bu_output_files[i]);
         siphash_cls_free(out_hash[i]);
+        comm_sig_free(comm_sig_compute[i]);
         free(out_hash[i]);
     }
     free(out_hash);
+    free(comm_sig_compute);
     free(_re_count_clauses);
     free(_bu_output_files);
     import_merger_end();

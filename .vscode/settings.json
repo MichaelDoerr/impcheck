@@ -25,6 +25,7 @@
         "initializer_list": "c",
         "secret.h": "c",
         "vector": "c",
-        "memory": "c"
+        "memory": "c",
+        "commutative_sig.h": "c"
     }
 }

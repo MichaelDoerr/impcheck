@@ -9,6 +9,7 @@ u64* _im_clause_ids;
 struct int_vec** _im_all_lits;
 struct plrat_reader** _im_import_files;
 struct siphash** _im_check_hash;
+struct comm_sig** _im_check_comm_sig;
 int last_index_to_load = 0;
 // Buffering.
 
@@ -32,6 +33,8 @@ void load_clause_if_available(int index) {
         if (_im_check_hash != NULL) {
             siphash_cls_update(_im_check_hash[index], (const u8*)&_im_clause_ids[index], sizeof(u64));
             siphash_cls_update(_im_check_hash[index], (const u8*)_im_all_lits[index]->data, _im_all_lits[index]->size * sizeof(int));
+        } else if (_im_check_comm_sig != NULL) {
+            comm_sig_update_clause(_im_check_comm_sig[index], _im_clause_ids[index], _im_all_lits[index]->data, nb_lits);
         }
     } else {
         _im_clause_ids[index] = -1;
@@ -44,9 +47,10 @@ void copy_lits(int* dest, int* src, int nb_lits) {
     }
 }
 
-void import_merger_init(int count_input_files, char** file_paths, u64* current_id, int** current_literals_data, u64* current_literals_size, u64 read_buffer_size, struct siphash** import_check_hash) {
+void import_merger_init(int count_input_files, char** file_paths, u64* current_id, int** current_literals_data, u64* current_literals_size, u64 read_buffer_size, struct siphash** import_check_hash, struct comm_sig** comm_sig_compute) {
     _im_n_files = count_input_files;
     _im_check_hash = import_check_hash;
+    _im_check_comm_sig = comm_sig_compute;
     _im_current_id = current_id;              // output location
     _im_current_literals_data = current_literals_data;  // output location
     _im_current_literals_size = current_literals_size;  // output location
@@ -61,6 +65,7 @@ void import_merger_init(int count_input_files, char** file_paths, u64* current_i
         if (!(_im_import_files[i])) trusted_utils_exit_eof();
         _im_all_lits[i] = int_vec_init(1);
         _im_left_clauses[i] = plrat_reader_read_int(_im_import_files[i]);
+        printf("%d clauses\n", _im_left_clauses[i]);
         
     }
     // load the first clause of each file exept for 0

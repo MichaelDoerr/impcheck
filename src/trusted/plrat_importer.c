@@ -193,11 +193,13 @@ void plrat_importer_end() {
         struct int_vec current_lits = *all_lits[i];
         struct clause* end = clauses[i]->data + clauses[i]->size;  // Get the end of the clause array
         for (struct clause* c = clauses[i]->data; c < end; c++) {
-            comm_sig_update_clause(signatures[i], c->id, current_lits.data + c->start, c->nb_lits);  // Update the signature with the clause id and literals
+            //Already updated sig at logging
+            //comm_sig_update_clause(signatures[i], c->id, current_lits.data + c->start, c->nb_lits);  // Update the signature with the clause id and literals
             plrat_importer_write_id_ref(c, id_out);
         }
         plrat_importer_write_ints(current_lits.data, current_lits.size, lits_out);  // Write the number of clauses
         u8* sig = comm_sig_digest(signatures[i]);
+        printf("Signaturo is: %lu\n", *((u64*)sig));
         plrat_importer_write_hash(sig, lits_out);
         comm_sig_free(signatures[i]);
     }
