@@ -36,6 +36,7 @@ struct plrat_reader** _bu_id_files;
 struct plrat_reader** _bu_clause_files;
 FILE** _bu_output_files;
 struct int_vec* _bu_clause_buffer;
+char** _bu_id_files_paths;
 
 void plrat_rebuild_write_lrat_import_file(u64 clause_id, int* literals, int nb_literals, FILE* current_out) {
     if (redist_strat == 0) {
@@ -84,6 +85,7 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
     _bu_output_files = trusted_utils_malloc(sizeof(FILE*) * comm_size);
     _bu_clause_files = trusted_utils_malloc(sizeof(struct plrat_reader*) * comm_size);
     _bu_id_files = trusted_utils_malloc(sizeof(struct plrat_reader*) * comm_size);
+    _bu_id_files_paths = trusted_utils_malloc(sizeof(char*)  * comm_size);
 
     // printf("local rank: %lu, num solvers: %lu\n", local_rank, n_solvers);
     char msg[512];
@@ -92,17 +94,17 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
     _bu_clause_buffer = int_vec_init(1024);
 
     for (size_t i = 0; i < comm_size; i++) {
-        char id_file_path[512];
+        _bu_id_files_paths[i] = trusted_utils_malloc(512 * sizeof(char));
         char cls_file_path[512];
         char out_file_path[512];
-        snprintf(id_file_path, 512, "%s/%lu/%lu.plrat_ids_sorted", out_path, local_rank, i);
+        snprintf(_bu_id_files_paths[i], 512, "%s/%lu/%lu.plrat_ids_sorted", out_path, local_rank, i);
         snprintf(cls_file_path, 512, "%s/%lu/%lu.plrat_clauses", out_path, local_rank, i);
         snprintf(out_file_path, 512, "%s/%lu/%lu.plrat_proxy", out_path, local_rank, i);
 
-        if (access(id_file_path, F_OK) != 0) {
+        if (access(_bu_id_files_paths[i], F_OK) != 0) {
             // file doesn't exist
             // create empty placeholder file
-            FILE* f = fopen(id_file_path, "wb");
+            FILE* f = fopen(_bu_id_files_paths[i], "wb");
             if (f == NULL) {
                 printf("Could not create empty file %s", out_file_path);
                 exit(-1);
@@ -116,7 +118,7 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
             trusted_utils_write_sig(temp_sig, f);
             fclose(f);
         }
-        FILE* id_file = fopen(id_file_path, "rb");
+        FILE* id_file = fopen(_bu_id_files_paths[i], "rb");
         struct stat st;
         int fd = fileno(id_file);
         fstat(fd, &st);
@@ -138,6 +140,7 @@ void plrat_rebuild_end() {
     for (size_t i = 0; i < comm_size; i++) {
         plrat_reader_end(_bu_clause_files[i]);
         fclose(_bu_output_files[i]);
+        remove(_bu_id_files_paths[i]);
         plrat_reader_end(_bu_id_files[i]);
     }
     free(_bu_clause_files);
