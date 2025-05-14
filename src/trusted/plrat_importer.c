@@ -199,7 +199,6 @@ void plrat_importer_end() {
         }
         plrat_importer_write_ints(current_lits.data, current_lits.size, lits_out);  // Write the number of clauses
         u8* sig = comm_sig_digest(signatures[i]);
-        printf("Signaturo is: %lu\n", *((u64*)sig));
         plrat_importer_write_hash(sig, lits_out);
         comm_sig_free(signatures[i]);
     }

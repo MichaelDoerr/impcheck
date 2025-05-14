@@ -65,7 +65,6 @@ void import_merger_init(int count_input_files, char** file_paths, u64* current_i
         if (!(_im_import_files[i])) trusted_utils_exit_eof();
         _im_all_lits[i] = int_vec_init(1);
         _im_left_clauses[i] = plrat_reader_read_int(_im_import_files[i]);
-        printf("%d clauses\n", _im_left_clauses[i]);
         
     }
     // load the first clause of each file exept for 0

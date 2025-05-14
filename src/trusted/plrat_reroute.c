@@ -116,7 +116,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
             trusted_utils_write_int(0, f);  // write placeholder 0 for count of clauses
             fclose(f);
         }
-        if (local_rank == 6) plrat_utils_log(file_paths[i]);
+        if (local_rank == 8) plrat_utils_log(file_paths[i]);
     }
     import_merger_init(comm_size, file_paths, &_re_current_ID, &_re_current_literals_data, &_re_current_literals_size, read_buffer_size, NULL, comm_sig_compute);
 
@@ -139,13 +139,14 @@ void plrat_reroute_end() {
         const u8 reported_incoming_sig[16];
         import_merger_read_sig((int*)reported_incoming_sig, i);
         if (!trusted_utils_equal_signatures(reported_incoming_sig, computed_incoming_sig)) {
+
             trusted_utils_log_err("Signature does not match in import!");
             printf("Signature A is: %lu\n", *((u64*)computed_incoming_sig));
             printf("Signature B is: %lu\n", *((u64*)reported_incoming_sig));
         } else {
             char msg[512];
             snprintf(msg, 512, "Signature matches in import local rank: %lu", local_rank);
-            trusted_utils_log(msg);
+            //trusted_utils_log(msg);
         }
         free(computed_incoming_sig);
 
@@ -171,10 +172,6 @@ void plrat_reroute_run() {
     while (true) {
         import_merger_next();
         int destination_index = plrat_utils_rank_to_y(_re_current_ID % n_solvers, comm_size);
-        if (2241 == _re_current_ID) {
-            snprintf(msg, 512, "myID:%li current_ID:%lu destination_index:%i x:%li", local_rank, _re_current_ID, destination_index, plrat_utils_rank_to_x(_re_current_ID % n_solvers, comm_size));
-            plrat_utils_log(msg);
-        }
         if (MALLOB_UNLIKELY(_re_current_ID == empty_ID)) break;
 
         siphash_cls_update(out_hash[destination_index], (u8*)&_re_current_ID, sizeof(u64));

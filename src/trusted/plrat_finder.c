@@ -209,7 +209,7 @@ void plrat_finder_run() {
                 } else {
                     char msg[512];
                     snprintf(msg, 512, "Signature matches in local rank: %lu", local_rank);
-                    trusted_utils_log(msg);
+                    //trusted_utils_log(msg);
                 }
                 siphash_cls_free(proof_check_hash);
                 for (size_t i = 0; i < comm_size; i++) {
@@ -222,7 +222,7 @@ void plrat_finder_run() {
                     } else {
                         char msg[512];
                         snprintf(msg, 512, "Signature matches in import local rank: %lu", local_rank);
-                        trusted_utils_log(msg);
+                        //trusted_utils_log(msg);
                     }
                 }
                 found_T = true;

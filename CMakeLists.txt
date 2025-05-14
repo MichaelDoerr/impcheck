@@ -95,7 +95,8 @@ add_executable(plrat_reroute
     src/trusted/secret.c 
     src/trusted/plrat_file_reader.c
     src/trusted/vectors.c
-    src/trusted/siphash_cls.c)
+    src/trusted/siphash_cls.c
+    src/trusted/commutative_sig.c)
 
 add_executable(plrat_last_pass
     src/trusted/import_merger.c 

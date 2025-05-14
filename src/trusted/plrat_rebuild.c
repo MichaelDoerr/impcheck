@@ -15,12 +15,12 @@
 #include "hash.h"
 #include "import_merger.h"
 #include "plrat_checker.h"  // for trusted_utils_read_int, trusted_utils_log...
+#include "plrat_file_reader.h"
 #include "plrat_utils.h"
 #include "secret.h"
 #include "siphash_cls.h"
+#include "commutative_sig.h"
 #include "top_check.h"  // for top_check_commit_formula_sig, top_check_d...
-#include "plrat_file_reader.h"
-
 
 const char* out_path;  // named pipe
 u64 n_solvers;         // number of solvers
@@ -99,25 +99,32 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
         snprintf(cls_file_path, 512, "%s/%lu/%lu.plrat_clauses", out_path, local_rank, i);
         snprintf(out_file_path, 512, "%s/%lu/%lu.plrat_proxy", out_path, local_rank, i);
 
-        if (access(cls_file_path, F_OK) != 0) {
+        if (access(id_file_path, F_OK) != 0) {
             // file doesn't exist
-            // create placeholder file containing only 0
-            FILE* f = fopen(out_file_path, "w");
-            trusted_utils_write_int(0, f);  // write placeholder 0 for count of clauses
+            // create empty placeholder file
+            FILE* f = fopen(id_file_path, "wb");
+            if (f == NULL) {
+                printf("Could not create empty file %s", out_file_path);
+                exit(-1);
+            }
             fclose(f);
-            exit(0);
-        }
-        else {
-            FILE *id_file = fopen(id_file_path, "rb");
-            struct stat st;
-            int fd = fileno(id_file);
-            fstat(fd, &st);
-            _bu_count_clauses[i] = st.st_size / 20;
 
-            _bu_id_files[i] = plrat_reader_init(read_buffer_size, id_file, local_rank);
-            _bu_clause_files[i] = plrat_reader_init(read_buffer_size, fopen(cls_file_path, "rb"), local_rank);
-            _bu_output_files[i] = fopen(out_file_path, "wb");
+            f = fopen(cls_file_path, "w");
+            struct comm_sig* empty_sig = comm_sig_init(SECRET_KEY_2);
+            // fill empty signature with ones
+            u8* temp_sig = comm_sig_digest(empty_sig);
+            trusted_utils_write_sig(temp_sig, f);
+            fclose(f);
         }
+        FILE* id_file = fopen(id_file_path, "rb");
+        struct stat st;
+        int fd = fileno(id_file);
+        fstat(fd, &st);
+        _bu_count_clauses[i] = st.st_size / 20;
+
+        _bu_id_files[i] = plrat_reader_init(read_buffer_size, id_file, local_rank);
+        _bu_clause_files[i] = plrat_reader_init(read_buffer_size, fopen(cls_file_path, "rb"), local_rank);
+        _bu_output_files[i] = fopen(out_file_path, "wb");
     }
 }
 
@@ -143,28 +150,25 @@ void plrat_rebuild_run() {
     char msg[512];
     for (size_t i = 0; i < comm_size; i++) {
         trusted_utils_write_int(_bu_count_clauses[i], _bu_output_files[i]);
-        for (size_t cls_nr = 0; cls_nr < _bu_count_clauses[i] ; cls_nr++) {
+        for (size_t cls_nr = 0; cls_nr < _bu_count_clauses[i]; cls_nr++) {
             u64 clause_id = plrat_swap_endianess(plrat_reader_read_ul(_bu_id_files[i]));
             u64 start_index = plrat_reader_read_ul(_bu_id_files[i]);
             u64 nb_lits = plrat_reader_read_int(_bu_id_files[i]);
-            plrat_reader_seek(start_index * sizeof(int), _bu_clause_files[i]); 
-           
-            int_vec_resize(_bu_clause_buffer, nb_lits); // this is super slow with standard file reader.
+            plrat_reader_seek(start_index * sizeof(int), _bu_clause_files[i]);
+
+            int_vec_resize(_bu_clause_buffer, nb_lits);  // this is super slow with standard file reader.
             plrat_reader_read_ints(_bu_clause_buffer->data, nb_lits, _bu_clause_files[i]);
 
             plrat_rebuild_write_lrat_import_file(clause_id, _bu_clause_buffer->data, nb_lits, _bu_output_files[i]);
         }
-        
+
         const u8 sig_res_reported[16];
-        
-        plrat_reader_seek((_bu_clause_files[i]->total_bytes - 16), _bu_clause_files[i]); 
+
+        plrat_reader_seek((_bu_clause_files[i]->total_bytes - 16), _bu_clause_files[i]);
         plrat_reader_read_ints((int*)sig_res_reported, 4, _bu_clause_files[i]);
-        //if (i==0){
-        //    printf("Signature reported: %d %d %d %d\n", sig_res_reported[0], sig_res_reported[1], sig_res_reported[2], sig_res_reported[3]);
-        //}
         trusted_utils_write_sig(sig_res_reported, _bu_output_files[i]);
     }
-    
+
     snprintf(msg, 512, "Done local_rank=%lu", local_rank);
     plrat_utils_log(msg);
 }
