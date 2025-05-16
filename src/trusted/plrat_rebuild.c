@@ -94,20 +94,24 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
     _bu_clause_buffer = int_vec_init(1024);
 
     for (size_t i = 0; i < comm_size; i++) {
+        char folder_path[512];
+
+        snprintf(folder_path, 512, "%s/%lu", out_path, local_rank);
+        mkdir(folder_path, 0755);
+
         _bu_id_files_paths[i] = trusted_utils_malloc(512 * sizeof(char));
         char cls_file_path[512];
         char out_file_path[512];
-        snprintf(_bu_id_files_paths[i], 512, "%s/%lu/%lu.plrat_ids_sorted", out_path, local_rank, i);
-        snprintf(cls_file_path, 512, "%s/%lu/%lu.plrat_clauses", out_path, local_rank, i);
-        snprintf(out_file_path, 512, "%s/%lu/%lu.plrat_proxy", out_path, local_rank, i);
+        snprintf(_bu_id_files_paths[i], 512, "%s/%lu.plrat_ids_sorted", folder_path, i);
+        snprintf(cls_file_path, 512, "%s/%lu.plrat_clauses", folder_path, i);
+        snprintf(out_file_path, 512, "%s/%lu.plrat_proxy", folder_path, i);
 
         if (access(_bu_id_files_paths[i], F_OK) != 0) {
             // file doesn't exist
             // create empty placeholder file
             FILE* f = fopen(_bu_id_files_paths[i], "wb");
             if (f == NULL) {
-                printf("Could not create empty file %s", out_file_path);
-                exit(-1);
+                printf("Could not create empty file %s\n", _bu_id_files_paths[i]);
             }
             fclose(f);
 

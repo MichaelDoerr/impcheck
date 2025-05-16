@@ -94,7 +94,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         char folder_path[512];
 
         snprintf(folder_path, 512, "%s/%lu", out_path, plrat_reroute_get_destination_rank(i));
-        mkdir(folder_path, 0755);
+        //mkdir(folder_path, 0755); already happens in rebuild
         snprintf(tmp_path, 512, "%s/%lu.plrat_import", folder_path, plrat_utils_rank_to_y(local_rank, comm_size));
         _bu_output_files[i] = fopen(tmp_path, "w");
 
@@ -140,7 +140,7 @@ void plrat_reroute_end() {
         import_merger_read_sig((int*)reported_incoming_sig, i);
         if (!trusted_utils_equal_signatures(reported_incoming_sig, computed_incoming_sig)) {
 
-            trusted_utils_log_err("Signature does not match in import!");
+            printf("Signature does not match in import! local rank: %lu\n", local_rank);
             printf("Signature A is: %lu\n", *((u64*)computed_incoming_sig));
             printf("Signature B is: %lu\n", *((u64*)reported_incoming_sig));
         } else {
