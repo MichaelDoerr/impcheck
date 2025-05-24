@@ -167,6 +167,7 @@ u8* siphash_cls_digest(struct siphash* hash) {
 void siphash_cls_free(struct siphash* hash) {
     free(hash->buf);
     free(hash->out);
+    free(hash);
 }
 
 #undef SH_UINT64_C

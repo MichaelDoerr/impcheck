@@ -99,12 +99,12 @@ void plrat_rebuild_init(const char* main_path, unsigned long solver_rank, unsign
         snprintf(folder_path, 512, "%s/%lu", out_path, local_rank);
         mkdir(folder_path, 0755);
 
-        _bu_id_files_paths[i] = trusted_utils_malloc(512 * sizeof(char));
-        char cls_file_path[512];
-        char out_file_path[512];
-        snprintf(_bu_id_files_paths[i], 512, "%s/%lu.plrat_ids_sorted", folder_path, i);
-        snprintf(cls_file_path, 512, "%s/%lu.plrat_clauses", folder_path, i);
-        snprintf(out_file_path, 512, "%s/%lu.plrat_proxy", folder_path, i);
+        _bu_id_files_paths[i] = trusted_utils_malloc(1024 * sizeof(char));
+        char cls_file_path[1024];
+        char out_file_path[1024];
+        snprintf(_bu_id_files_paths[i], 1024, "%s/%lu.plrat_ids_sorted", folder_path, i);
+        snprintf(cls_file_path, 1024, "%s/%lu.plrat_clauses", folder_path, i);
+        snprintf(out_file_path, 1024, "%s/%lu.plrat_proxy", folder_path, i);
 
         if (access(_bu_id_files_paths[i], F_OK) != 0) {
             // file doesn't exist

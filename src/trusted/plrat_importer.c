@@ -138,9 +138,9 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
     }
 
     for (size_t i = 0; i < comm_size; i++) {
-        char ids_path[512];
-        char clauses_path[512];
         char proof_folder[512];
+        char ids_path[1024];
+        char clauses_path[1024];
         u64 proxy_rank = plrat_importer_get_proxy_rank(i);
         if (redist_strat == 2) {
             snprintf(proof_folder, 512, "%s/%lu", out_path, proxy_rank);
@@ -152,10 +152,10 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
         }
 
         if (redist_strat == 2) {
-            snprintf(ids_path, 512, "%s/%lu.plrat_ids", proof_folder, plrat_utils_rank_to_x(local_rank, comm_size));
-            snprintf(clauses_path, 512, "%s/%lu.plrat_clauses", proof_folder, plrat_utils_rank_to_x(local_rank, comm_size));
+            snprintf(ids_path, 1024, "%s/%lu.plrat_ids", proof_folder, plrat_utils_rank_to_x(local_rank, comm_size));
+            snprintf(clauses_path, 1024, "%s/%lu.plrat_clauses", proof_folder, plrat_utils_rank_to_x(local_rank, comm_size));
         } else {
-            snprintf(ids_path, 512, "%s/%lu.plrat_import", proof_folder, local_rank);
+            snprintf(ids_path, 1024, "%s/%lu.plrat_import", proof_folder, local_rank);
         }
 
         // plrat_utils_log(ids_path);
@@ -201,17 +201,21 @@ void plrat_importer_end() {
         u8* sig = comm_sig_digest(signatures[i]);
         plrat_importer_write_hash(sig, lits_out);
         comm_sig_free(signatures[i]);
+        free(sig);
     }
 
     for (size_t i = 0; i < comm_size; i++) {
         int_vec_free(all_lits[i]);
         clause_vec_free(clauses[i]);
         fclose(id_reference_files[i]);
+        fclose(lits_array_files[i]);
     }
+    free(written_lits);
     free(id_reference_files);
     free(lits_array_files);
     free(all_lits);
     free(clauses);
+    free(signatures);
 }
 
 void plrat_importer_end_old() {

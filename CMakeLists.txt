@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.11.4)
 project (impcheck_modules)
 
-add_definitions("-std=gnu99 -Wall -Wextra -Werror -pedantic-errors -flto -g") 
+add_definitions("-std=gnu99 -Wall -Wextra -Werror -pedantic-errors -flto -g -O2") 
 if(IMPCHECK_WRITE_DIRECTIVES)
     add_definitions("-DIMPCHECK_WRITE_DIRECTIVES=${IMPCHECK_WRITE_DIRECTIVES}")
 endif()
@@ -50,21 +50,20 @@ add_executable(impcheck_confirm
 
 add_executable(plrat_first_pass 
     src/trusted/trusted_utils.c 
+    src/trusted/top_check.c 
+    src/trusted/secret.c 
+    src/trusted/confirm.c
+    src/writer.c 
+    src/trusted/vectors.c 
+    src/trusted/hash.c 
+    src/trusted/siphash.c 
+    src/trusted/siphash_cls.c
+    src/trusted/lrat_check.c  
     src/trusted/plrat_utils.c 
     src/trusted/plrat_checker.c 
     src/trusted/plrat_importer.c 
-    src/writer.c 
     src/trusted/main_plrat_first.c 
-    src/trusted/vectors.c 
-    src/trusted/top_check.c 
-    src/trusted/lrat_check.c  
-    src/trusted/hash.c 
-    src/writer.c 
-    src/trusted/secret.c 
-    src/trusted/confirm.c
     src/trusted/plrat_file_reader.c
-    src/trusted/siphash.c 
-    src/trusted/siphash_cls.c
     src/trusted/commutative_sig.c)
     
 
@@ -74,13 +73,14 @@ add_executable(plrat_reroute
     src/trusted/plrat_reroute.c
     src/trusted/trusted_utils.c
     src/trusted/plrat_utils.c 
+    src/trusted/siphash_cls.c 
+    src/trusted/siphash.c 
     src/trusted/lrat_check.c 
     src/writer.c 
     src/trusted/hash.c 
     src/trusted/secret.c 
     src/trusted/plrat_file_reader.c
     src/trusted/vectors.c
-    src/trusted/siphash_cls.c 
     src/trusted/commutative_sig.c)
 
     add_executable(plrat_rebuild
@@ -89,13 +89,14 @@ add_executable(plrat_reroute
     src/trusted/plrat_rebuild.c
     src/trusted/trusted_utils.c
     src/trusted/plrat_utils.c 
-    src/trusted/lrat_check.c 
+    src/trusted/siphash_cls.c
+    src/trusted/siphash.c 
+    src/trusted/lrat_check.c
     src/writer.c 
     src/trusted/hash.c 
     src/trusted/secret.c 
     src/trusted/plrat_file_reader.c
     src/trusted/vectors.c
-    src/trusted/siphash_cls.c
     src/trusted/commutative_sig.c)
 
 add_executable(plrat_last_pass
@@ -108,9 +109,10 @@ add_executable(plrat_last_pass
     src/trusted/vectors.c 
     src/trusted/hash.c 
     src/trusted/secret.c 
+    src/trusted/siphash_cls.c
+    src/trusted/siphash.c 
     src/trusted/lrat_check.c
     src/trusted/plrat_file_reader.c
-    src/trusted/siphash_cls.c
     src/trusted/commutative_sig.c)
     
 # Link against math library

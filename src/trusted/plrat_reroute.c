@@ -90,12 +90,12 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
     snprintf(msg, 512, "root_n:%f", root_n);
     if (local_rank == 0) plrat_utils_log(msg);
     for (size_t i = 0; i < comm_size; i++) {
-        char tmp_path[512];
         char folder_path[512];
+        char tmp_path[1024];
 
         snprintf(folder_path, 512, "%s/%lu", out_path, plrat_reroute_get_destination_rank(i));
         //mkdir(folder_path, 0755); already happens in rebuild
-        snprintf(tmp_path, 512, "%s/%lu.plrat_import", folder_path, plrat_utils_rank_to_y(local_rank, comm_size));
+        snprintf(tmp_path, 1024, "%s/%lu.plrat_import", folder_path, plrat_utils_rank_to_y(local_rank, comm_size));
         _bu_output_files[i] = fopen(tmp_path, "w");
 
         if (!(_bu_output_files[i])) trusted_utils_exit_eof();
@@ -158,7 +158,6 @@ void plrat_reroute_end() {
         fclose(_bu_output_files[i]);
         siphash_cls_free(out_hash[i]);
         comm_sig_free(comm_sig_compute[i]);
-        free(out_hash[i]);
     }
     free(out_hash);
     free(comm_sig_compute);

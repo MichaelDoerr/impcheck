@@ -205,7 +205,9 @@ void plrat_finder_run() {
                 const u8 sig_res_reported[16];
                 plrat_reader_read_ints((int*)sig_res_reported, 4, proof_reader);
                 if (!trusted_utils_equal_signatures(sig_res_computed, sig_res_reported)) {
-                    trusted_utils_log_err("Signature does not match!");
+                    trusted_utils_log_err("Signature does not match in Proof!");
+                        printf("Signature A is: %lu\n", *((u64*)sig_res_computed));
+                        printf("Signature B is: %lu\n", *((u64*)sig_res_reported));
                 } else {
                     char msg[512];
                     snprintf(msg, 512, "Signature matches in local rank: %lu", local_rank);

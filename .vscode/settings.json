@@ -26,6 +26,7 @@
         "secret.h": "c",
         "vector": "c",
         "memory": "c",
-        "commutative_sig.h": "c"
+        "commutative_sig.h": "c",
+        "siphash.h": "c"
     }
 }
