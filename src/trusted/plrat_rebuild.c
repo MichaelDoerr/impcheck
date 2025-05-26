@@ -144,7 +144,7 @@ void plrat_rebuild_end() {
     for (size_t i = 0; i < comm_size; i++) {
         plrat_reader_end(_bu_clause_files[i]);
         fclose(_bu_output_files[i]);
-        remove(_bu_id_files_paths[i]);
+        // remove(_bu_id_files_paths[i]); // only needed if solvers produce another proof in the same folder
         plrat_reader_end(_bu_id_files[i]);
     }
     free(_bu_clause_files);
