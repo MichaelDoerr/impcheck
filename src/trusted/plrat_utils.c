@@ -58,7 +58,7 @@ u64 plrat_utils_get_next_valid_id(const u64 old_id, u64* offset, struct hash_tab
 
     char msgstr2[512] = "";
     snprintf(msgstr2, 512, "bigger offset! new_id:%lu jump_offset:%lu new_offset:%lu htsize:%lu", new_id, new_offset - *offset, new_offset, id_offsets->capacity);
-    trusted_utils_log(msgstr2);
+    //trusted_utils_log(msgstr2);
 
     assert(new_offset > *offset);
     *offset = new_offset;
