@@ -161,8 +161,10 @@ void plrat_importer_init(const char* main_path, unsigned long solver_id, unsigne
         // plrat_utils_log(ids_path);
         id_reference_files[i] = fopen(ids_path, "wb");
         if (!(id_reference_files[i])) trusted_utils_exit_eof();
+        trusted_utils_write_ints((int*)&n_solvers, 0, id_reference_files[i]); // make shure an empty file is created
         lits_array_files[i] = fopen(clauses_path, "wb");
         if (!(lits_array_files[i])) trusted_utils_exit_eof();
+        trusted_utils_write_ints((int*)&n_solvers, 0, lits_array_files[i]); // make shure an empty file is created
 
         if (i != local_rank) {
             all_lits[i] = int_vec_init(write_buffer_size / sizeof(int));

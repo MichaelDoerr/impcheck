@@ -116,7 +116,6 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
             trusted_utils_write_int(0, f);  // write placeholder 0 for count of clauses
             fclose(f);
         }
-        if (local_rank == 8) plrat_utils_log(file_paths[i]);
     }
     import_merger_init(comm_size, file_paths, &_re_current_ID, &_re_current_literals_data, &_re_current_literals_size, read_buffer_size, NULL, comm_sig_compute);
 
