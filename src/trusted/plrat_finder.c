@@ -89,8 +89,8 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     out_path = main_path;
     local_rank = solver_id;
     proof_lits = int_vec_init(1);
-    char proof_path[512];
-    snprintf(proof_path, 512, "%s/%lu/out.plrat", out_path, local_rank);
+    char proof_path[768];
+    snprintf(proof_path, 768, "%s/%lu/out.plrat", out_path, local_rank);
     my_proof = fopen(proof_path, "rb");
 
     proof_check_hash = siphash_cls_init(SECRET_KEY);
@@ -102,8 +102,8 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
     import_check_hash = trusted_utils_malloc(sizeof(struct siphash*) * comm_size);
 
     for (size_t i = 0; i < comm_size; i++) {
-        file_paths[i] = trusted_utils_malloc(512);
-        snprintf(file_paths[i], 512, "%s/%lu/%lu.plrat_import", out_path, local_rank, i);
+        file_paths[i] = trusted_utils_malloc(768);
+        snprintf(file_paths[i], 768, "%s/%lu/%lu.plrat_import", out_path, local_rank, i);
 
         import_check_hash[i] = siphash_cls_init(SECRET_KEY);
     }
@@ -125,6 +125,10 @@ void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned 
 // }
 
 void plrat_finder_end() {
+    for (size_t i = 0; i < comm_size; i++)  {
+        siphash_cls_free(import_check_hash[i]);
+    }
+    free(import_check_hash);
     plrat_reader_end(proof_reader);
     import_merger_end();
     int_vec_free(proof_lits);
