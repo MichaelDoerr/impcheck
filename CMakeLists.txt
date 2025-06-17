@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.11.4)
 project (impcheck_modules)
 
-add_definitions("-std=gnu99 -Wall -Wextra -Werror -pedantic-errors -flto -g -O2") 
+add_definitions("-std=gnu99 -Wall -Wextra -Werror -pedantic-errors -flto -g") 
 if(IMPCHECK_WRITE_DIRECTIVES)
     add_definitions("-DIMPCHECK_WRITE_DIRECTIVES=${IMPCHECK_WRITE_DIRECTIVES}")
 endif()

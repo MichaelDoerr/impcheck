@@ -5,6 +5,7 @@
 #include <math.h>      // for sqrt
 #include <stdbool.h>   // for bool, true, false
 #include <stdio.h>     // for fclose, fflush_unlocked, fopen, snprintf
+#include <unistd.h>    // For fsync()
 #include <stdlib.h>    // for free
 #include <sys/stat.h>  // for mkdir
 #include <time.h>      // for clock, CLOCKS_PER_SEC, clock_t
@@ -96,7 +97,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         snprintf(folder_path, 512, "%s/%lu", out_path, plrat_reroute_get_destination_rank(i));
         //mkdir(folder_path, 0755); already happens in rebuild
         snprintf(tmp_path, 1024, "%s/%lu.plrat_import", folder_path, plrat_utils_rank_to_y(local_rank, comm_size));
-        _bu_output_files[i] = fopen(tmp_path, "w");
+        _bu_output_files[i] = fopen(tmp_path, "wb");
 
         if (!(_bu_output_files[i])) trusted_utils_exit_eof();
         plrat_reroute_write_int(0, _bu_output_files[i]);  // write placeholder 0 for count of clauses
@@ -112,7 +113,7 @@ void plrat_reroute_init(const char* main_path, unsigned long solver_rank, unsign
         if (access(file_paths[i], F_OK) != 0) {
             // file doesn't exist
             // create placeholder file containing only 0
-            FILE* f = fopen(file_paths[i], "w");
+            FILE* f = fopen(file_paths[i], "wb");
             trusted_utils_write_int(0, f);  // write placeholder 0 for count of clauses
             fclose(f);
         }
@@ -154,6 +155,7 @@ void plrat_reroute_end() {
 
         fseek(_bu_output_files[i], 0, SEEK_SET);
         plrat_reroute_write_int(_re_count_clauses[i], _bu_output_files[i]);
+        fsync(fileno(_bu_output_files[i]));
         fclose(_bu_output_files[i]);
         siphash_cls_free(out_hash[i]);
         comm_sig_free(comm_sig_compute[i]);

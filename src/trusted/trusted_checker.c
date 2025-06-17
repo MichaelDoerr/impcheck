@@ -2,6 +2,7 @@
 #include <stdbool.h>        // for bool, true, false
 #include <stdio.h>          // for fclose, fflush_unlocked, fopen, snprintf
 #include <stdlib.h>         // for free
+#include <unistd.h>
 #include <time.h>           // for clock, CLOCKS_PER_SEC, clock_t
 #include "top_check.h"      // for top_check_commit_formula_sig, top_check_d...
 #include "trusted_utils.h"  // for trusted_utils_read_int, trusted_utils_log...
@@ -77,6 +78,7 @@ void tc_init(const char* fifo_in, const char* fifo_out, u64 num_solvers, u64 glo
 void tc_end() {
     free(buf_hints);
     free(buf_lits);
+    fsync(fileno(output));
     fclose(output);
     fclose(input);
     plrat_utils_end_debug();

@@ -6,6 +6,7 @@
 #include <stdbool.h>   // for bool, true, false
 #include <stdio.h>     // for fclose, fflush_unlocked, fopen, snprintf
 #include <stdlib.h>    // for free
+#include <unistd.h>
 #include <sys/stat.h>  // for mkdir
 #include <time.h>      // for clock, CLOCKS_PER_SEC, clock_t
 
@@ -209,8 +210,11 @@ void plrat_importer_end() {
     for (size_t i = 0; i < comm_size; i++) {
         int_vec_free(all_lits[i]);
         clause_vec_free(clauses[i]);
+        fsync(fileno(id_reference_files[i]));
         fclose(id_reference_files[i]);
+        fsync(fileno(lits_array_files[i]));
         fclose(lits_array_files[i]);
+
     }
     free(written_lits);
     free(id_reference_files);

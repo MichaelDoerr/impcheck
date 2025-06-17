@@ -81,7 +81,8 @@ void skip_proof_header() {
 void plrat_finder_init(const char* main_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy, unsigned long read_buffer_size) {
     redist_strat = redistribution_strategy;
     n_solvers = num_solvers;
-    root_n = sqrt((double)num_solvers);
+    double d_num = (double)n_solvers;
+    root_n = sqrt(d_num);
     comm_size = (size_t)ceil(root_n);  // round to nearest integer
     if (redist_strat == 1) {
         comm_size = n_solvers;
