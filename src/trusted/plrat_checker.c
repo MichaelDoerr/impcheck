@@ -6,6 +6,7 @@
 #include <stdio.h>    // for fclose, fflush_unlocked, fopen, snprintf
 #include <stdlib.h>   // for free
 #include <time.h>     // for clock, CLOCKS_PER_SEC, clock_t
+#include <unistd.h>    // for access
 
 #include "checker_interface.h"
 #include "hash.h"
@@ -174,6 +175,14 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
     FILE* formular;
     clause_hash = siphash_cls_init(SECRET_KEY);
     snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
+
+    if (access(proof_path, F_OK) != 0) {
+            // file doesn't exist
+            // create placeholder file containing only 0
+            FILE* f = fopen(proof_path, "wb");
+            trusted_utils_write_int(TRUSTED_CHK_TERMINATE, f);  // write placeholder 0 for count of clauses
+            fclose(f);
+        }
 
     FILE* proof_stream = fopen(proof_path, "rb+");
     if (!proof_stream) trusted_utils_exit_eof();
