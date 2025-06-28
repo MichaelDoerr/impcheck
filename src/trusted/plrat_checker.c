@@ -79,6 +79,13 @@ void skip_proof_header() {
     if (c == TRUSTED_CHK_END_LOAD && solver_rank == 0) {
         plrat_utils_log("Header Skipped");
     }
+    if (c == TRUSTED_CHK_TERMINATE) {
+        plrat_utils_log("empty file");
+        long loaded_end = proof->total_bytes - proof->remaining_bytes;
+        long loaded_start = loaded_end - proof->actual_buffer_size;
+        long current_pos = (proof->pos - proof->read_buffer) + loaded_start;
+        plrat_reader_seek(current_pos - 1, proof);
+    }
 }
 
 bool pc_load() {
@@ -177,16 +184,33 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
     snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
 
     if (access(proof_path, F_OK) != 0) {
-            // file doesn't exist
-            // create placeholder file containing only 0
-            FILE* f = fopen(proof_path, "wb");
-            trusted_utils_write_int(TRUSTED_CHK_TERMINATE, f);  // write placeholder 0 for count of clauses
-            fclose(f);
+        // file doesn't exist
+        // create placeholder file containing only 0
+        FILE* f = fopen(proof_path, "wb");
+        trusted_utils_write_char(1, f);
+        trusted_utils_write_char(2, f);
+        trusted_utils_write_char(TRUSTED_CHK_TERMINATE, f);  // write placeholder
+        fclose(f);
+    } 
+    
+    FILE* f = fopen(proof_path, "rb+");
+    struct stat st;
+    int fd = fileno(f);
+    fstat(fd, &st);
+    if (st.st_size == 6) {
+        // print every char in file
+        for (int i = 0; i < 6; ++i) {
+            fprintf(stdout, "%d ", trusted_utils_read_char(f));
         }
+        fprintf(stdout, "\n");
+    }
+    fclose(f);
 
     FILE* proof_stream = fopen(proof_path, "rb+");
     if (!proof_stream) trusted_utils_exit_eof();
     proof = plrat_reader_init(read_buffer_size, proof_stream, solver_id);
+
+
     formular = fopen(formula_path, "rb");
     if (!formular) trusted_utils_exit_eof();
     UNUSED(formula_path);
@@ -265,7 +289,9 @@ int pc_run() {
             break;
 
         } else {
-            trusted_utils_log_err("Invalid directive!");
+            char errlog[512];
+            snprintf(errlog, 512, "Invalid directive! rank: %lu c: %d filesize:%lu", solver_rank, c, proof->total_bytes);
+            trusted_utils_log_err(errlog);
             break;
         }
 

@@ -71,6 +71,12 @@ void skip_proof_header() {
         if (local_rank == 0) {
             plrat_utils_log("Header Skipped");
         }
+    } else if  (c  ==  TRUSTED_CHK_TERMINATE) {
+        plrat_utils_log("empty file");
+        long loaded_end = proof_reader->total_bytes - proof_reader->remaining_bytes;
+        long loaded_start = loaded_end - proof_reader->actual_buffer_size;
+        long current_pos = (proof_reader->pos - proof_reader->read_buffer) + loaded_start;
+        plrat_reader_seek(current_pos - 1, proof_reader);
     } else {
         char err_str[512];
         snprintf(err_str, 512, "Invalid END_LOAD c:%c", c);
@@ -206,6 +212,12 @@ void plrat_finder_run() {
                 plrat_reader_skip_bytes(nb_hints * sizeof(u64), proof_reader);
 
             } else if (c == TRUSTED_CHK_TERMINATE) {
+                if (current_ID != empty_ID) {
+                    char err_str[512];
+                    snprintf(err_str, 512, "Error: clause left to check rank:%lu ID:%lu", local_rank, current_ID);
+                    plrat_utils_log_err(err_str);
+                    exit(1);
+                }
                 const u8* sig_res_computed = siphash_cls_digest(proof_check_hash);
                 const u8 sig_res_reported[16];
                 plrat_reader_read_ints((int*)sig_res_reported, 4, proof_reader);
