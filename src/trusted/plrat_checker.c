@@ -178,10 +178,10 @@ bool pc_load_from_file(FILE* formular) {
     return no_error;
 }
 
-void pc_init(const char* formula_path, const char* proofs_path, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy, unsigned long read_buffer_size) {
+void pc_init(const char* formula_path, const char* proofs_path_in, const char* proofs_path_out, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy, unsigned long read_buffer_size) {
     FILE* formular;
     clause_hash = siphash_cls_init(SECRET_KEY);
-    snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path, solver_id);
+    snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path_in, solver_id);
 
     if (access(proof_path, F_OK) != 0) {
         // file doesn't exist
@@ -192,19 +192,6 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
         trusted_utils_write_char(TRUSTED_CHK_TERMINATE, f);  // write placeholder
         fclose(f);
     } 
-    
-    FILE* f = fopen(proof_path, "rb+");
-    struct stat st;
-    int fd = fileno(f);
-    fstat(fd, &st);
-    if (st.st_size == 6) {
-        // print every char in file
-        for (int i = 0; i < 6; ++i) {
-            fprintf(stdout, "%d ", trusted_utils_read_char(f));
-        }
-        fprintf(stdout, "\n");
-    }
-    fclose(f);
 
     FILE* proof_stream = fopen(proof_path, "rb+");
     if (!proof_stream) trusted_utils_exit_eof();
@@ -218,7 +205,7 @@ void pc_init(const char* formula_path, const char* proofs_path, unsigned long so
     buf_hints = u64_vec_init(1 << 14);
     nb_solvers = num_solvers;
     solver_rank = solver_id;
-    plrat_importer_init(proofs_path, solver_id, num_solvers, redistribution_strategy, read_buffer_size);
+    plrat_importer_init(proofs_path_out, solver_id, num_solvers, redistribution_strategy, read_buffer_size);
     if (!pc_load_from_file(formular)) {  //! pc_load() ||
         exit(0);
     }
@@ -303,7 +290,7 @@ int pc_run() {
         }
     }
     float elapsed = (float)(clock() - start) / CLOCKS_PER_SEC;
-    snprintf(trusted_utils_msgstr, 512, "cpu:%.3f prod:%lu imp:%lu del:%lu n_s:%lu", elapsed, nb_produced, nb_imported, nb_deleted, nb_solvers);
+    snprintf(trusted_utils_msgstr, 512, "rank: %lu cpu:%.3f prod:%lu imp:%lu del:%lu n_s:%lu", solver_rank, elapsed, nb_produced, nb_imported, nb_deleted, nb_solvers);
     trusted_utils_log(trusted_utils_msgstr);
 
     return 0;

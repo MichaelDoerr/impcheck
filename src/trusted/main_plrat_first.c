@@ -6,11 +6,12 @@
 
 int main(int argc, char *argv[]) {
     // path/to/formula.cnf path/to/proofs/ <num-solvers> <solver-id> <redistribution-strategy>
-    const char *formula_path = "", *proofs_path = "";
+    const char *formula_path = "", *proofs_path_in = "", *proofs_path_out = "";
     u64 num_solvers = 0, solver_id = 0, redistribution_strategy = 0, read_buffer_KB = 1024;
     for (int i = 1; i < argc; i++) {
         trusted_utils_try_match_arg(argv[i], "-formula-path=", &formula_path);
-        trusted_utils_try_match_arg(argv[i], "-proofs-path=", &proofs_path);
+        trusted_utils_try_match_arg(argv[i], "-proofs-path-in=", &proofs_path_in);
+        trusted_utils_try_match_arg(argv[i], "-proofs-path-out=", &proofs_path_out);
         trusted_utils_try_match_num(argv[i], "-num-solvers=", &num_solvers);
         trusted_utils_try_match_num(argv[i], "-solver-id=", &solver_id);
         trusted_utils_try_match_num(argv[i], "-read-buffer-KB=", &read_buffer_KB);
@@ -19,10 +20,10 @@ int main(int argc, char *argv[]) {
 
     char output_path[512];
     snprintf(output_path, 512, "-formula-path=%s -proofs-path=%s num-solvers=%lu -solver-id=%lu -redistribution-strategy=%lu",
-    formula_path, proofs_path, num_solvers, solver_id, redistribution_strategy);
+    formula_path, proofs_path_in, num_solvers, solver_id, redistribution_strategy);
     //plrat_utils_log(output_path);
     u64 read_buffer_size = read_buffer_KB * 1024; // convert to bytes
-    pc_init(formula_path, proofs_path, solver_id, num_solvers, redistribution_strategy, read_buffer_size); 
+    pc_init(formula_path, proofs_path_in, proofs_path_out, solver_id, num_solvers, redistribution_strategy, read_buffer_size); 
     int res = pc_run();
     pc_end();
     fflush(stdout);
