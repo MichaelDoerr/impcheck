@@ -42,7 +42,8 @@ u64 nb_solvers;            // number of solvers
 u64 solver_rank;           // solver id
 u64 redist;                // redistribution_strategy
 u64 pc_nb_loaded_clauses;  // number of loaded clauses
-char proof_path[512];
+char proof_path_in[512];
+char redestribute_path_out[512];
 
 bool do_logging = true;
 
@@ -181,19 +182,20 @@ bool pc_load_from_file(FILE* formular) {
 void pc_init(const char* formula_path, const char* proofs_path_in, const char* proofs_path_out, unsigned long solver_id, unsigned long num_solvers, unsigned long redistribution_strategy, unsigned long read_buffer_size) {
     FILE* formular;
     clause_hash = siphash_cls_init(SECRET_KEY);
-    snprintf(proof_path, 512, "%s/%lu/out.plrat", proofs_path_in, solver_id);
+    snprintf(proof_path_in, 512, "%s/%lu/out.plrat", proofs_path_in, solver_id);
+    snprintf(redestribute_path_out, 512, "%s", proofs_path_out);
 
-    if (access(proof_path, F_OK) != 0) {
+    if (access(proof_path_in, F_OK) != 0) {
         // file doesn't exist
         // create placeholder file containing only 0
-        FILE* f = fopen(proof_path, "wb");
+        FILE* f = fopen(proof_path_in, "wb");
         trusted_utils_write_char(1, f);
         trusted_utils_write_char(2, f);
         trusted_utils_write_char(TRUSTED_CHK_TERMINATE, f);  // write placeholder
         fclose(f);
     } 
 
-    FILE* proof_stream = fopen(proof_path, "rb+");
+    FILE* proof_stream = fopen(proof_path_in, "rb+");
     if (!proof_stream) trusted_utils_exit_eof();
     proof = plrat_reader_init(read_buffer_size, proof_stream, solver_id);
 
@@ -279,7 +281,7 @@ int pc_run() {
             char errlog[512];
             snprintf(errlog, 512, "Invalid directive! rank: %lu c: %d filesize:%lu", solver_rank, c, proof->total_bytes);
             trusted_utils_log_err(errlog);
-            break;
+            exit(1);
         }
 
         if (MALLOB_UNLIKELY(!top_check_valid())) {
@@ -287,9 +289,19 @@ int pc_run() {
                 trusted_utils_log_err(trusted_utils_msgstr);
                 reported_error = true;
             }
+            exit(1);
         }
     }
     float elapsed = (float)(clock() - start) / CLOCKS_PER_SEC;
+
+    if (top_check_validate_unsat(NULL)) {
+        char unsat_folder[512];
+        snprintf(unsat_folder, 512, "%s/.unsat_found", redestribute_path_out);
+        if (mkdir(unsat_folder, 0777) == 0) {
+            snprintf(unsat_folder, 512, "%s/%lu", unsat_folder, solver_rank);
+            mkdir(unsat_folder, 0777);
+        }
+    }
     snprintf(trusted_utils_msgstr, 512, "rank: %lu cpu:%.3f prod:%lu imp:%lu del:%lu n_s:%lu", solver_rank, elapsed, nb_produced, nb_imported, nb_deleted, nb_solvers);
     trusted_utils_log(trusted_utils_msgstr);
 

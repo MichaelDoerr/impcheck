@@ -17,7 +17,7 @@
 #include "secret.h"
 #include "siphash_cls.h"
 
-const char* out_path;  // named pipe
+char confirm_folder[512];
 u64 n_solvers;         // number of solvers
 double root_n;         // square root of number of solvers
 size_t comm_size;
@@ -93,11 +93,14 @@ void plrat_finder_init(const char* main_path, const char* imports_path, unsigned
     if (redist_strat == 1) {
         comm_size = n_solvers;
     }
-    out_path = main_path;
     local_rank = solver_id;
     proof_lits = int_vec_init(1);
+
+    snprintf(confirm_folder, 512, "%s/%lu/.check_ok", imports_path, local_rank);
+    mkdir(confirm_folder, 0777);
+
     char proof_path[768];
-    snprintf(proof_path, 768, "%s/%lu/out.plrat", out_path, local_rank);
+    snprintf(proof_path, 768, "%s/%lu/out.plrat", main_path, local_rank);
     my_proof = fopen(proof_path, "rb");
 
     proof_check_hash = siphash_cls_init(SECRET_KEY);
@@ -223,8 +226,9 @@ void plrat_finder_run() {
                 plrat_reader_read_ints((int*)sig_res_reported, 4, proof_reader);
                 if (!trusted_utils_equal_signatures(sig_res_computed, sig_res_reported)) {
                     trusted_utils_log_err("Signature does not match in Proof!");
-                        printf("Signature A is: %lu\n", *((u64*)sig_res_computed));
-                        printf("Signature B is: %lu\n", *((u64*)sig_res_reported));
+                    printf("Signature A is: %lu\n", *((u64*)sig_res_computed));
+                    printf("Signature B is: %lu\n", *((u64*)sig_res_reported));
+                    exit(1);
                 } else {
                     char msg[512];
                     snprintf(msg, 512, "Signature matches in local rank: %lu", local_rank);
@@ -238,6 +242,7 @@ void plrat_finder_run() {
                         trusted_utils_log_err("Signature does not match in import!");
                         printf("Signature A is: %lu\n", *((u64*)sig_res_computed));
                         printf("Signature B is: %lu\n", *((u64*)sig_res_reported));
+                        exit(1);
                     } else {
                         char msg[512];
                         snprintf(msg, 512, "Signature matches in import local rank: %lu", local_rank);
@@ -250,10 +255,11 @@ void plrat_finder_run() {
             } else {
                 trusted_utils_log_err("Invalid directive!");
                 exit(1);
-                break;
             }
         }
     }
+    mkdir(confirm_folder, 0777);
+
     char msg[512];
     snprintf(msg, 512, "Done local_rank=%lu", local_rank);
     plrat_utils_log(msg);
