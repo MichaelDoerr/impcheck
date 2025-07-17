@@ -186,6 +186,9 @@ void pc_init(const char* formula_path, const char* proofs_path_in, const char* p
     snprintf(redestribute_path_out, 512, "%s", proofs_path_out);
 
     if (access(proof_path_in, F_OK) != 0) {
+        char log_str[512];
+        snprintf(log_str, 512, "proof_path_in does not exist. Creating it: %s", proof_path_in);
+        plrat_utils_log(log_str);
         // file doesn't exist
         // create placeholder file containing only 0
         FILE* f = fopen(proof_path_in, "wb");
@@ -196,12 +199,12 @@ void pc_init(const char* formula_path, const char* proofs_path_in, const char* p
     } 
 
     FILE* proof_stream = fopen(proof_path_in, "rb+");
-    if (!proof_stream) trusted_utils_exit_eof();
+    if (!proof_stream) trusted_utils_log_err("proof_path_in could not be opened");
     proof = plrat_reader_init(read_buffer_size, proof_stream, solver_id);
 
 
     formular = fopen(formula_path, "rb");
-    if (!formular) trusted_utils_exit_eof();
+    if (!formular) trusted_utils_log_err("formula_path could not be opened");
     UNUSED(formula_path);
     buf_lits = int_vec_init(1 << 14);
     buf_hints = u64_vec_init(1 << 14);
