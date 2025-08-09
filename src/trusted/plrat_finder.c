@@ -97,7 +97,6 @@ void plrat_finder_init(const char* main_path, const char* imports_path, unsigned
     proof_lits = int_vec_init(1);
 
     snprintf(confirm_folder, 512, "%s/%lu/.check_ok", imports_path, local_rank);
-    mkdir(confirm_folder, 0777);
 
     char proof_path[768];
     snprintf(proof_path, 768, "%s/%lu/out.plrat", main_path, local_rank);
